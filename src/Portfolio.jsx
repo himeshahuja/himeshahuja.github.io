@@ -47,7 +47,7 @@ const Portfolio = () => {
             <span className="link-item" key={link.label}>
               <a
                 href={link.href}
-                target='_blank'}
+                target='_blank'
                 rel={link.href.startsWith('mailto:') ? undefined : 'noreferrer noopener'}
               >
                 {link.label}
