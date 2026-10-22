@@ -9,7 +9,7 @@ const links = [
   },
   {
     label: 'Github',
-    href: 'https://github.com/meshhi13',
+    href: 'https://github.com/himeshahuja',
   },
   {
     label: 'Transcript',
