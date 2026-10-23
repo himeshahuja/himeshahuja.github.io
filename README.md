@@ -7,8 +7,8 @@ Personal site of Himesh Ahuja, a computer science student at the University of V
 ## Projects you can try in the browser
 
 - [Map Pathfinder](https://himeshahuja.github.io/map-pathfinder/): A*, Dijkstra, BFS and more racing across real road networks
-- [AI Minesweeper](https://himeshahuja.github.io/AI-Minesweeper/): Minesweeper with an AI that deduces safe moves
-- [Maze Generator and Solver](https://himeshahuja.github.io/MazeSolver/): generates mazes and animates DFS, BFS and A* solving them
+- [AI Minesweeper](https://himeshahuja.github.io/ai-minesweeper/): Minesweeper with an AI that deduces safe moves
+- [Maze Generator and Solver](https://himeshahuja.github.io/maze-solver/): generates mazes and animates DFS, BFS and A* solving them
 
 ## Development
 
