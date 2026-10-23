@@ -23,7 +23,7 @@ const playable = [
     size: 'lead',
   },
   {
-    title: 'Raft, live',
+    title: 'Raft',
     text: 'A consensus cluster you can crash, partition and watch recover.',
     image: '/work/raft-consensus.jpg',
     alt: 'A five-server Raft cluster: S1 leads while S4 has crashed, with heartbeats in flight between the servers.',
