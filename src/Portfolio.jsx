@@ -15,53 +15,48 @@ const contact = [
 const playable = [
   {
     title: 'Map Pathfinder',
-    text: 'A*, Dijkstra, BFS and three more race across real streets. Pick any two points on the map; road data streams in as the search reaches it.',
-    stack: 'JavaScript, MapLibre, vector tiles',
+    text: 'Nine search algorithms racing across real streets, anywhere on the map.',
     image: '/work/map-pathfinder.jpg',
     alt: 'A* route from the University of Virginia to Crozet, with the explored roads in blue and the route in orange.',
     play: 'https://himeshahuja.github.io/map-pathfinder/',
     code: `${GITHUB}/map-pathfinder`,
-    layout: 'wide',
+    size: 'lead',
+  },
+  {
+    title: 'Raft, live',
+    text: 'A consensus cluster you can crash, partition and watch recover.',
+    image: '/work/raft-consensus.jpg',
+    alt: 'A five-server Raft cluster: S1 leads while S4 has crashed, with heartbeats in flight between the servers.',
+    play: 'https://himeshahuja.github.io/raft-consensus/',
+    code: `${GITHUB}/raft-consensus`,
+    size: 'side',
   },
   {
     title: 'AI Minesweeper',
-    text: 'Minesweeper with an AI that only makes moves it can prove are safe, then clears the board while you watch.',
-    stack: 'Python and pygame, with a web version',
+    text: 'An AI that only makes moves it can prove are safe.',
     image: '/work/minesweeper.jpg',
     alt: 'A Minesweeper board partway through an AI solve, with flagged mines and revealed numbers.',
     play: 'https://himeshahuja.github.io/ai-minesweeper/',
     code: `${GITHUB}/ai-minesweeper`,
-    layout: 'left',
+    size: 'third',
   },
   {
-    title: 'Raft, live',
-    text: 'A Raft consensus cluster in the browser. Crash the leader, cut servers off the network, and watch elections, replication and commits happen message by message. Checked against Raft\u2019s safety properties in 300 randomised chaos runs.',
-    stack: 'JavaScript, Canvas',
-    image: '/work/raft-consensus.jpg',
-    alt: 'A five-server Raft cluster: S1 leads term 6 while S4 has crashed, with heartbeats in flight between the servers.',
-    play: 'https://himeshahuja.github.io/raft-consensus/',
-    code: `${GITHUB}/raft-consensus`,
-    layout: 'wide',
-  },
-  {
-    title: 'Maze Generator & Solver',
-    text: 'Carves a random maze, then sends depth-first search, breadth-first search and A* to the exit and counts every cell each one searched.',
-    stack: 'Python and pygame, with a web version',
+    title: 'Maze Solver',
+    text: 'Carve a maze, then race DFS, BFS and A* through it.',
     image: '/work/maze-solver.jpg',
     alt: 'A generated maze with the breadth-first search solution drawn in blue.',
     play: 'https://himeshahuja.github.io/maze-solver/',
     code: `${GITHUB}/maze-solver`,
-    layout: 'right',
+    size: 'third',
   },
   {
     title: "Rubik's Cube",
-    text: 'A 3D cube to turn, scramble and orbit. First built in JavaFX, now in the browser with Three.js.',
-    stack: 'Java and JavaFX, Three.js',
+    text: 'A 3D cube to turn, scramble and solve.',
     image: '/work/rubiks-cube.jpg',
     alt: "A scrambled 3D Rubik's cube.",
     play: 'https://himeshahuja.github.io/rubiks-cube/',
     code: `${GITHUB}/rubiks-cube`,
-    layout: 'left',
+    size: 'third',
   },
 ];
 
@@ -90,15 +85,6 @@ const jobs = [
     when: 'May – Aug 2024',
     text: 'Real-time mapping features for a geospatial product.',
   },
-];
-
-const more = [
-  { name: 'theCourseForum', what: 'Course reviews and grade data for UVA students, built by a student organization.', stack: 'Django, PostgreSQL, AWS', href: 'https://thecourseforum.com' },
-  { name: 'reviewmyresumeplease', what: 'Resume reviews with PDF annotation and revision tracking, used by 100+ people.', stack: 'TypeScript, FastAPI, PostgreSQL', href: 'https://reviewmyresumeplease.com', code: `${GITHUB}/reviewmyresumeplease` },
-  { name: 'A8THER', what: 'An AI agent that reverse engineers compiled binaries inside a sandbox. Built at HooHacks 2026.', stack: 'Python, Ghidra, Docker', code: `${GITHUB}/A8THER` },
-  { name: 'Limit Order Book', what: 'A matching engine with strict price-time priority, simulating a real-time exchange.', stack: 'C++20', code: `${GITHUB}/LimitOrderBook` },
-  { name: 'Causality', what: 'A stock-trading simulator with a virtual portfolio, live prices and transaction history.', stack: 'Next.js, Firebase', code: `${GITHUB}/Causality` },
-  { name: 'NewsSpark', what: 'A news dashboard with accounts and saved articles.', stack: 'React, Python, SQLite', code: `${GITHUB}/NewsSpark` },
 ];
 
 const PeaceMark = () => (
@@ -138,20 +124,16 @@ function useReveal() {
   }, []);
 }
 
-function Project({ p }) {
+function Tile({ p, i }) {
   return (
-    <article className={`project project--${p.layout}`}>
-      <a className="project__image" href={p.play} {...external(p.play)} data-reveal>
+    <article className={`tile tile--${p.size}`} data-reveal style={{ '--i': i % 3 }}>
+      <a className="tile__image" href={p.play} {...external(p.play)} aria-label={`Open ${p.title}`}>
         <img src={p.image} alt={p.alt} loading="lazy" />
       </a>
-      <div className="project__text" data-reveal style={{ '--i': 1 }}>
-        <h3>{p.title}</h3>
+      <div className="tile__text">
+        <h3><a href={p.play} {...external(p.play)}>{p.title}</a></h3>
+        <a className="tile__code" href={p.code} {...external(p.code)}>Code</a>
         <p>{p.text}</p>
-        <p className="stack">{p.stack}</p>
-        <div className="actions">
-          <a className="button" href={p.play} {...external(p.play)}>Play it</a>
-          <a className="link" href={p.code} {...external(p.code)}>Read the code</a>
-        </div>
       </div>
     </article>
   );
@@ -161,7 +143,7 @@ function Project({ p }) {
 function useParallax() {
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
-    const imgs = [...document.querySelectorAll('.project__image img')];
+    const imgs = [...document.querySelectorAll('.tile__image img')];
     let raf = 0;
     const update = () => {
       raf = 0;
@@ -223,8 +205,10 @@ export default function Portfolio() {
         </section>
 
         <section id="work" className="work" aria-labelledby="work-title">
-          <h2 id="work-title" data-reveal>Things you can play with</h2>
-          {playable.map((p) => <Project key={p.title} p={p} />)}
+          <h2 id="work-title" data-reveal>Work</h2>
+          <div className="tiles">
+            {playable.map((p, i) => <Tile key={p.title} p={p} i={i} />)}
+          </div>
         </section>
 
         <section id="experience" className="experience" aria-labelledby="experience-title">
@@ -246,42 +230,10 @@ export default function Portfolio() {
         <section className="school" aria-labelledby="school-title">
           <div className="school__inner">
             <h2 id="school-title" data-reveal>University of Virginia</h2>
-            <p className="school__degree" data-reveal style={{ '--i': 1 }}>
-              Bachelor of Arts in Computer Science and Mathematics, graduating June 2028.
-            </p>
-            <dl className="facts">
-              <div data-reveal style={{ '--i': 1 }}><dt>3.85</dt><dd>GPA out of 4.0</dd></div>
-              <div data-reveal style={{ '--i': 2 }}><dt>Top 5%</dt><dd>Echols Scholar</dd></div>
-              <div data-reveal style={{ '--i': 3 }}><dt>TA</dt><dd>Data Structures</dd></div>
-              <div data-reveal style={{ '--i': 4 }}><dt>2×</dt><dd>Dean’s List</dd></div>
-            </dl>
-            <p className="school__courses" data-reveal>
-              Coursework in advanced algorithms, computer architecture, machine learning and distributed systems.
-            </p>
+            <p className="school__degree" data-reveal style={{ '--i': 1 }}>Computer Science and Mathematics</p>
           </div>
         </section>
 
-        <section className="more" aria-labelledby="more-title">
-          <h2 id="more-title" data-reveal>More I’ve built</h2>
-          <div className="table-wrap" data-reveal style={{ '--i': 1 }}>
-            <table>
-              <thead>
-                <tr><th scope="col">Project</th><th scope="col">What it does</th><th scope="col">Built with</th></tr>
-              </thead>
-              <tbody>
-                {more.map((m) => (
-                  <tr key={m.name}>
-                    <th scope="row">
-                      <a href={m.href || m.code} {...external(m.href || m.code)}>{m.name}</a>
-                    </th>
-                    <td>{m.what}</td>
-                    <td>{m.stack}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
       </main>
 
       <footer id="contact" className="close" aria-labelledby="contact-title">
@@ -293,7 +245,6 @@ export default function Portfolio() {
         <nav className="close__links" aria-label="Elsewhere" data-reveal style={{ '--i': 3 }}>
           {contact.map((c) => <a key={c.label} href={c.href} {...external(c.href)}>{c.label}</a>)}
         </nav>
-        <p className="close__name" aria-hidden="true">Himesh Ahuja</p>
       </footer>
     </>
   );

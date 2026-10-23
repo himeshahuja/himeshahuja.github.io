@@ -178,51 +178,50 @@ main { padding: 0 var(--margin); }
 /* Work ---------------------------------------------------------------------------- */
 
 .work { padding-top: var(--section); }
-.work > h2 { margin-bottom: clamp(48px, 6vw, 96px); }
+.work > h2 { margin-bottom: clamp(40px, 5vw, 72px); }
 
-.project {
+/* 12 columns: the lead row is 7 + 5, the second row three 4s. */
+.tiles {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: var(--gap);
-  align-items: center;
+  gap: clamp(40px, 4.5vw, 72px) var(--gap);
 }
-.project + .project { margin-top: clamp(80px, 9vw, 144px); }
+.tile { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.tile--lead { grid-column: span 7; }
+.tile--side { grid-column: span 5; }
+.tile--third { grid-column: span 4; }
 
-.project__image { display: block; overflow: hidden; background: var(--surface); }
-.project__image img {
+.tile__image { display: block; overflow: hidden; background: var(--surface); }
+.tile--lead .tile__image, .tile--side .tile__image { height: clamp(260px, 30vw, 460px); }
+.tile--third .tile__image { aspect-ratio: 4 / 3; }
+.tile__image img {
   width: 100%;
-  aspect-ratio: 1;
+  height: 100%;
   object-fit: cover;
-  object-position: center top;
   transform: translateY(var(--py, 0%)) scale(var(--ps, 1.08));
   transition: transform 600ms var(--ease);
   will-change: transform;
 }
-.project__image:hover img { --ps: 1.12; }
+.tile__image:hover img { --ps: 1.13; }
 
-.project__text { display: flex; flex-direction: column; gap: 16px; max-width: 34rem; }
-.project__text .stack { color: var(--muted); font-size: var(--small); }
-.project__text .actions { margin-top: 8px; }
-
-/* The map gets the whole width; the others alternate sides with their words. */
-.project--wide .project__image { grid-column: 1 / -1; margin: 0 calc(var(--margin) * -1); }
-.project--wide .project__image img { aspect-ratio: 21 / 10; object-position: center; }
-.project--wide .project__text {
-  grid-column: 1 / -1;
+.tile__text {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 16px var(--gap);
-  max-width: none;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 6px 16px;
 }
-.project--wide .project__text h3 { grid-column: 1 / 5; }
-.project--wide .project__text > p:first-of-type { grid-column: 5 / 10; }
-.project--wide .project__text .stack { grid-column: 5 / 10; }
-.project--wide .project__text .actions { grid-column: 5 / 10; }
-
-.project--left .project__image { grid-column: 1 / 8; }
-.project--left .project__text { grid-column: 8 / 13; }
-.project--right .project__image { grid-column: 6 / 13; grid-row: 1; }
-.project--right .project__text { grid-column: 1 / 6; grid-row: 1; }
+.tile__text h3 a { text-decoration: none; }
+.tile__text h3 a:hover { color: var(--accent); }
+.tile__text p { grid-column: 1 / -1; color: var(--muted); max-width: 44ch; }
+.tile__code {
+  color: var(--muted);
+  font-size: var(--small);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 4px;
+}
+.tile__code:hover { color: var(--ink); }
 
 /* Experience ---------------------------------------------------------------------- */
 
@@ -275,49 +274,25 @@ main { padding: 0 var(--margin); }
 
 .school {
   margin: var(--section) calc(var(--margin) * -1) 0;
-  padding: clamp(80px, 10vw, 160px) var(--margin);
+  padding: clamp(64px, 8vw, 128px) var(--margin);
   background: var(--band);
   color: var(--band-ink);
 }
 .school__inner {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 28px var(--gap);
+  gap: 12px var(--gap);
 }
-.school h2 { grid-column: 1 / 8; max-width: none; }
-.school__degree { grid-column: 8 / 13; align-self: end; font-size: clamp(20px, 1.7vw, 26px); line-height: 1.3; }
-.facts {
+.school h2 { grid-column: 1 / -1; max-width: none; }
+.school__degree {
   grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--gap);
-  margin: clamp(32px, 4vw, 64px) 0 0;
-}
-.facts div { display: flex; flex-direction: column; gap: 4px; }
-.facts dt {
   font-family: var(--display-font);
-  font-size: clamp(48px, 6.4vw, 104px);
+  font-size: clamp(26px, 3.2vw, 48px);
   font-weight: 700;
-  line-height: 0.95;
-  letter-spacing: -0.045em;
-  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  opacity: 0.6;
 }
-.facts dd { margin: 0; font-size: var(--text); }
-.school__courses { grid-column: 1 / 9; margin-top: 8px; }
-
-/* More ------------------------------------------------------------------------------ */
-
-.more { padding-top: var(--section); }
-.more > h2 { margin-bottom: clamp(32px, 4vw, 56px); }
-.table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; min-width: 640px; }
-th, td { text-align: left; vertical-align: top; padding: 22px 24px 22px 0; }
-thead th { color: var(--muted); font-size: var(--small); font-weight: 500; padding-top: 0; padding-bottom: 14px; }
-tbody tr { border-top: 1px solid var(--surface); }
-tbody th { font-weight: 600; font-size: clamp(19px, 1.5vw, 22px); letter-spacing: -0.01em; width: 26%; }
-tbody th a { text-decoration: none; }
-tbody th a:hover { color: var(--accent); }
-tbody td:last-child { color: var(--muted); width: 22%; }
 
 /* Close ------------------------------------------------------------------------------ */
 
@@ -346,20 +321,6 @@ tbody td:last-child { color: var(--muted); width: 22%; }
 .close__links { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 12px 32px; font-weight: 600; }
 .close__links a { text-decoration: none; }
 .close__links a:hover { color: var(--accent); }
-.close__name {
-  grid-column: 1 / -1;
-  margin-top: clamp(64px, 8vw, 128px);
-  font-family: var(--display-font);
-  font-size: clamp(64px, 13vw, 210px);
-  font-weight: 800;
-  line-height: 0.82;
-  letter-spacing: -0.055em;
-  margin-left: -0.05em;
-  white-space: nowrap;
-  overflow: hidden;
-  color: var(--surface);
-  user-select: none;
-}
 
 /* Motion ------------------------------------------------------------------------------ */
 
@@ -374,8 +335,8 @@ tbody td:last-child { color: var(--muted); width: 22%; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .js [data-reveal] { opacity: 1; transform: none; transition: none; }
-  .button, .project__image img, .link, .text-button { transition: none; }
-  .project__image img { transform: none; }
+  .button, .tile__image img, .link, .text-button { transition: none; }
+  .tile__image img { transform: none; }
 }
 
 /* Phone and tablet ---------------------------------------------------------------------- */
@@ -383,21 +344,14 @@ tbody td:last-child { color: var(--muted); width: 22%; }
 @media (max-width: 900px) {
   .hero__foot { grid-template-columns: 1fr; align-items: start; }
   .hero__foot .actions { justify-content: flex-start; }
-  .project--left .project__image,
-  .project--right .project__image,
-  .project--left .project__text,
-  .project--right .project__text { grid-column: 1 / -1; grid-row: auto; }
-  .project--wide .project__text h3,
-  .project--wide .project__text > p:first-of-type,
-  .project--wide .project__text .stack,
-  .project--wide .project__text .actions { grid-column: 1 / -1; }
+  .tile--lead, .tile--side { grid-column: 1 / -1; }
+  .tile--lead .tile__image, .tile--side .tile__image { height: auto; aspect-ratio: 16 / 10; }
+  .tile--third { grid-column: span 6; }
   .job__who, .job__what { grid-column: 1 / -1; }
-  .school h2, .school__degree, .school__courses { grid-column: 1 / -1; }
-  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .close h2, .close__lead { grid-column: 1 / -1; }
 }
 
 @media (max-width: 560px) {
   .bar nav a:not(.button) { display: none; }
-  .project__image img { aspect-ratio: 4 / 3; }
+  .tile--third { grid-column: 1 / -1; }
 }
