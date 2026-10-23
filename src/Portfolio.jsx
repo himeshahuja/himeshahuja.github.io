@@ -34,6 +34,16 @@ const playable = [
     layout: 'left',
   },
   {
+    title: 'Raft, live',
+    text: 'A Raft consensus cluster in the browser. Crash the leader, cut servers off the network, and watch elections, replication and commits happen message by message. Checked against Raft\u2019s safety properties in 300 randomised chaos runs.',
+    stack: 'JavaScript, Canvas',
+    image: '/work/raft-consensus.jpg',
+    alt: 'A five-server Raft cluster: S1 leads term 6 while S4 has crashed, with heartbeats in flight between the servers.',
+    play: 'https://himeshahuja.github.io/raft-consensus/',
+    code: `${GITHUB}/raft-consensus`,
+    layout: 'wide',
+  },
+  {
     title: 'Maze Generator & Solver',
     text: 'Carves a random maze, then sends depth-first search, breadth-first search and A* to the exit and counts every cell each one searched.',
     stack: 'Python and pygame, with a web version',

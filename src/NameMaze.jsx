@@ -48,27 +48,46 @@ export default function NameMaze({ lines }) {
       off.width = cols;
       off.height = rows;
       const o = off.getContext('2d', { willReadFrequently: true });
+      // Letters are measured by cap height (the flat top of an H), and each line
+      // is clipped to cap height and baseline. Round letters (S, U, J) overshoot
+      // both slightly, which at grid resolution shows up as one-cell spikes.
+      const capOf = (size) => {
+        o.font = `800 ${size}px ${FONT}`;
+        return o.measureText('H').actualBoundingBoxAscent;
+      };
+      const GAP = 0.3; // between stacked lines, as a share of cap height
       // Largest size at which the given lines fit, leaving room to route around them.
       const fit = (text) => {
-        let size = rows;
+        let size = rows * 2;
         for (; size > 6; size -= 1) {
-          o.font = `800 ${size}px ${FONT}`;
+          const cap = capOf(size);
           const w = Math.max(...text.map((t) => o.measureText(t).width));
-          if (w <= cols * 0.9 && size * 0.92 * text.length <= rows * 0.8) break;
+          const h = cap * (text.length + GAP * (text.length - 1));
+          if (w <= cols * 0.9 && h <= rows * 0.72) break;
         }
         return size;
       };
       // One line or stacked, whichever lets the name be bigger.
       const oneLine = [lines[0]];
       const stacked = lines.slice(1);
-      const text = fit(stacked) > fit(oneLine) * 1.15 ? stacked : oneLine;
+      const text = capOf(fit(stacked)) > capOf(fit(oneLine)) * 1.15 ? stacked : oneLine;
       const size = fit(text);
+      const cap = Math.round(capOf(size));
+      const gap = Math.round(cap * GAP);
+      let top = Math.round((rows - (cap * text.length + gap * (text.length - 1))) / 2);
       o.font = `800 ${size}px ${FONT}`;
       o.textAlign = 'center';
-      o.textBaseline = 'middle';
+      o.textBaseline = 'alphabetic';
       o.fillStyle = '#000';
-      const lh = size * 0.92;
-      text.forEach((t, k) => o.fillText(t, cols / 2, rows / 2 + (k - (text.length - 1) / 2) * lh));
+      for (const t of text) {
+        o.save();
+        o.beginPath();
+        o.rect(0, top, cols, cap);
+        o.clip();
+        o.fillText(t, cols / 2, top + cap);
+        o.restore();
+        top += cap + gap;
+      }
       const data = o.getImageData(0, 0, cols, rows).data;
       wall = new Uint8Array(cols * rows);
       for (let i = 0; i < cols * rows; i++) wall[i] = data[i * 4 + 3] > 128 ? 1 : 0;

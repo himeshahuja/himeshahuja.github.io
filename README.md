@@ -7,6 +7,7 @@ Personal site of Himesh Ahuja, a computer science student at the University of V
 ## Projects you can try in the browser
 
 - [Map Pathfinder](https://himeshahuja.github.io/map-pathfinder/): A*, Dijkstra, BFS and more racing across real road networks
+- [Raft, live](https://himeshahuja.github.io/raft-consensus/): a Raft consensus cluster you can crash and partition, drawn message by message
 - [AI Minesweeper](https://himeshahuja.github.io/ai-minesweeper/): Minesweeper with an AI that deduces safe moves
 - [Maze Generator and Solver](https://himeshahuja.github.io/maze-solver/): generates mazes and animates DFS, BFS and A* solving them
 
