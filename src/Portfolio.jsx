@@ -67,36 +67,33 @@ const playable = [
 
 const jobs = [
   {
+    org: 'Tesla',
+    role: 'Software Engineer Intern',
+    when: 'Sep 2026 – now',
+    text: 'Tools that connect test drivers’ feedback to vehicle telemetry.',
+  },
+  {
     org: 'Noblis',
     role: 'Software Engineer Intern',
-    when: 'January 2026 to now',
-    where: 'Reston, VA',
-    text: 'Co-designed an on-premises LLM platform: vLLM, Kong and FastAPI across 10+ microservices, serving five open-weight models. Added mutual TLS and request logging for 100,000+ daily inference requests, and grew internal use tenfold to over 100 engineers.',
+    when: 'Jan – Sep 2026',
+    text: 'A secure, self-hosted platform for running open-weight LLMs.',
   },
   {
     org: 'Chandra Robot Autonomy Lab',
     role: 'Research Assistant',
-    when: 'August 2025 to June 2026',
-    where: 'University of Virginia',
-    text: 'Tuned Pure Pursuit path tracking in a ROS2 simulation, raising autonomous navigation success from 52% to 88% and earning a $2,000 Ingrassia Grant. Validated TurtleBot-to-Jackal navigation over 50+ trials with PhD researchers.',
+    when: 'Aug 2025 – Jun 2026',
+    text: 'Navigation and path tracking for autonomous robots.',
   },
   {
     org: 'NT Concepts',
     role: 'Software Engineer Intern',
-    when: 'May to August 2024',
-    where: 'Tysons Corner, VA',
-    text: 'Shipped 10+ GIS features in React, OpenLayers and Redux for a Google subcontract, including live location sharing and an interactive map interface.',
-  },
-  {
-    org: 'theCourseForum',
-    role: 'Engineer, student organization',
-    when: 'University of Virginia',
-    where: '20,000+ students',
-    text: 'Built Django and PostgreSQL features in a team of 20+ engineers, cut AWS pipeline time by 47% with multistage Docker builds, and designed threaded comments across 200,000+ course reviews.',
+    when: 'May – Aug 2024',
+    text: 'Real-time mapping features for a geospatial product.',
   },
 ];
 
 const more = [
+  { name: 'theCourseForum', what: 'Course reviews and grade data for UVA students, built by a student organization.', stack: 'Django, PostgreSQL, AWS', href: 'https://thecourseforum.com' },
   { name: 'reviewmyresumeplease', what: 'Resume reviews with PDF annotation and revision tracking, used by 100+ people.', stack: 'TypeScript, FastAPI, PostgreSQL', href: 'https://reviewmyresumeplease.com', code: `${GITHUB}/reviewmyresumeplease` },
   { name: 'A8THER', what: 'An AI agent that reverse engineers compiled binaries inside a sandbox. Built at HooHacks 2026.', stack: 'Python, Ghidra, Docker', code: `${GITHUB}/A8THER` },
   { name: 'Limit Order Book', what: 'A matching engine with strict price-time priority, simulating a real-time exchange.', stack: 'C++20', code: `${GITHUB}/LimitOrderBook` },
@@ -238,7 +235,7 @@ export default function Portfolio() {
                 <div className="job__who">
                   <h3>{j.org}</h3>
                   <p>{j.role}</p>
-                  <p className="muted">{j.when}<br />{j.where}</p>
+                  <p className="muted">{j.when}</p>
                 </div>
                 <p className="job__what">{j.text}</p>
               </li>
@@ -250,7 +247,7 @@ export default function Portfolio() {
           <div className="school__inner">
             <h2 id="school-title" data-reveal>University of Virginia</h2>
             <p className="school__degree" data-reveal style={{ '--i': 1 }}>
-              Computer Science and Mathematics, graduating May 2028.
+              Bachelor of Arts in Computer Science and Mathematics, graduating June 2028.
             </p>
             <dl className="facts">
               <div data-reveal style={{ '--i': 1 }}><dt>3.85</dt><dd>GPA out of 4.0</dd></div>
@@ -259,7 +256,7 @@ export default function Portfolio() {
               <div data-reveal style={{ '--i': 4 }}><dt>2×</dt><dd>Dean’s List</dd></div>
             </dl>
             <p className="school__courses" data-reveal>
-              Coursework in advanced algorithms, computer architecture, machine learning and LLM engineering.
+              Coursework in advanced algorithms, computer architecture, machine learning and distributed systems.
             </p>
           </div>
         </section>
