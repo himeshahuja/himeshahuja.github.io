@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
-import SearchGrid from './SearchGrid.jsx';
+import NameMaze from './NameMaze.jsx';
 
 const GITHUB = 'https://github.com/himeshahuja';
+const NAME_LINES = ['HIMESH AHUJA', 'HIMESH', 'AHUJA'];
 const EMAIL = 'himesh.d.ahuja@gmail.com';
 
 const contact = [
@@ -149,8 +150,37 @@ function Project({ p }) {
   );
 }
 
+// Project pictures drift a little slower than the page.
+function useParallax() {
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const imgs = [...document.querySelectorAll('.project__image img')];
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const vh = window.innerHeight;
+      for (const img of imgs) {
+        const r = img.parentElement.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > vh) continue;
+        const offset = (r.top + r.height / 2 - vh / 2) / vh;
+        img.style.setProperty('--py', `${(offset * -6).toFixed(2)}%`);
+      }
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+}
+
 export default function Portfolio() {
   useReveal();
+  useParallax();
 
   return (
     <>
@@ -169,20 +199,18 @@ export default function Portfolio() {
 
       <main id="top">
         <section className="hero">
-          <h1 data-reveal>Himesh Ahuja</h1>
-          <div className="hero__body">
-            <div className="hero__intro">
-              <p className="statement" data-reveal style={{ '--i': 1 }}>
-                I study computer science and math at the University of Virginia, and build software
-                that finds its way: search, robots, and the platforms underneath.
-              </p>
-              <div className="actions" data-reveal style={{ '--i': 2 }}>
-                <a className="button" href="/HimeshAhujaResume.pdf" target="_blank" rel="noreferrer">Read my resume</a>
-                <a className="link" href="#work">See the work</a>
-              </div>
-            </div>
-            <div className="hero__grid" data-reveal style={{ '--i': 2 }}>
-              <SearchGrid />
+          <h1 className="hero__title">
+            <span className="sr-only">Himesh Ahuja</span>
+            <NameMaze lines={NAME_LINES} />
+          </h1>
+          <div className="hero__foot">
+            <p className="statement" data-reveal>
+              I study computer science and math at the University of Virginia, and build software
+              that finds its way: search, robots, and the platforms underneath.
+            </p>
+            <div className="actions" data-reveal style={{ '--i': 1 }}>
+              <a className="button" href="/HimeshAhujaResume.pdf" target="_blank" rel="noreferrer">Read my resume</a>
+              <a className="link" href="#work">See the work</a>
             </div>
           </div>
         </section>
