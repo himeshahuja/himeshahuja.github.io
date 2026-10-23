@@ -153,11 +153,10 @@ main { padding: 0 var(--margin); }
 
 .hero { padding-top: clamp(8px, 2vw, 24px); }
 .hero__title { margin: 0 calc(var(--margin) * -1); }
-.name-maze {
+.name-net {
   display: block;
   width: 100%;
   height: clamp(300px, 64vh, 680px);
-  cursor: crosshair;
   touch-action: pan-y;
 }
 .hero__foot {

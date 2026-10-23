@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import NameMaze from './NameMaze.jsx';
+import NameNetwork from './NameNetwork.jsx';
 
 const GITHUB = 'https://github.com/himeshahuja';
 const NAME_LINES = ['HIMESH AHUJA', 'HIMESH', 'AHUJA'];
@@ -190,7 +190,7 @@ export default function Portfolio() {
         <section className="hero">
           <h1 className="hero__title">
             <span className="sr-only">Himesh Ahuja</span>
-            <NameMaze lines={NAME_LINES} />
+            <NameNetwork lines={NAME_LINES} />
           </h1>
           <div className="hero__foot">
             <p className="statement" data-reveal>
