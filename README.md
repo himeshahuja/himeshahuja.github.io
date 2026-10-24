@@ -8,8 +8,10 @@ Personal site of Himesh Ahuja, a computer science student at the University of V
 
 - [Map Pathfinder](https://himeshahuja.github.io/map-pathfinder/): A*, Dijkstra, BFS and more racing across real road networks
 - [Raft](https://himeshahuja.github.io/raft-consensus/): a Raft consensus cluster you can crash and partition, drawn message by message
+- [Load Balancer](https://himeshahuja.github.io/load-balancer/): six load-balancing algorithms routing live traffic to a pool of servers, with crashes, slowdowns and a latency comparison
 - [AI Minesweeper](https://himeshahuja.github.io/ai-minesweeper/): Minesweeper with an AI that deduces safe moves
 - [Maze Generator and Solver](https://himeshahuja.github.io/maze-solver/): generates mazes and animates DFS, BFS and A* solving them
+- [Rubik's Cube](https://himeshahuja.github.io/rubiks-cube/): a 3D cube to turn, scramble and solve
 
 ## Development
 

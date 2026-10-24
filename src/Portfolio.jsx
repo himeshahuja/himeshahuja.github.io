@@ -31,7 +31,16 @@ const playable = [
     alt: 'A Minesweeper board partway through an AI solve, with flagged mines and revealed numbers.',
     play: 'https://himeshahuja.github.io/ai-minesweeper/',
     code: `${GITHUB}/ai-minesweeper`,
-    size: 'third',
+    size: 'side',
+  },
+  {
+    title: 'Load Balancer',
+    text: 'Six routing algorithms, one slow server, and what each choice does to tail latency.',
+    image: '/work/load-balancer.jpg',
+    alt: 'A least connections load balancer spreading requests across five servers, keeping the slow fifth server out of a queue.',
+    play: 'https://himeshahuja.github.io/load-balancer/',
+    code: `${GITHUB}/load-balancer`,
+    size: 'lead',
   },
   {
     title: 'Maze Solver',
@@ -40,7 +49,7 @@ const playable = [
     alt: 'A generated maze with the breadth-first search solution drawn in blue.',
     play: 'https://himeshahuja.github.io/maze-solver/',
     code: `${GITHUB}/maze-solver`,
-    size: 'third',
+    size: 'half',
   },
   {
     title: "Rubik's Cube",
@@ -49,7 +58,7 @@ const playable = [
     alt: "A scrambled 3D Rubik's cube.",
     play: 'https://himeshahuja.github.io/rubiks-cube/',
     code: `${GITHUB}/rubiks-cube`,
-    size: 'third',
+    size: 'half',
   },
 ];
 
