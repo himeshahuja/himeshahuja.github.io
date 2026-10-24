@@ -5,13 +5,6 @@ const GITHUB = 'https://github.com/himeshahuja';
 const NAME_LINES = ['HIMESH AHUJA', 'HIMESH', 'AHUJA'];
 const EMAIL = 'himesh.d.ahuja@gmail.com';
 
-const contact = [
-  { label: 'Resume', href: '/HimeshAhujaResume.pdf' },
-  { label: 'GitHub', href: GITHUB },
-  { label: 'LinkedIn', href: 'https://linkedin.com/in/himesh-ahuja' },
-  { label: 'Transcript', href: '/HimeshAhujaTranscript.pdf' },
-];
-
 const playable = [
   {
     title: 'Map Pathfinder',
@@ -227,25 +220,16 @@ export default function Portfolio() {
           </ol>
         </section>
 
-        <section className="school" aria-labelledby="school-title">
+        <section id="contact" className="school" aria-labelledby="school-title">
           <div className="school__inner">
             <h2 id="school-title" data-reveal>University of Virginia</h2>
             <p className="school__degree" data-reveal style={{ '--i': 1 }}>Computer Science and Mathematics</p>
+            <a className="school__email" href={`mailto:${EMAIL}`} data-reveal style={{ '--i': 2 }}>{EMAIL}</a>
           </div>
         </section>
 
       </main>
 
-      <footer id="contact" className="close" aria-labelledby="contact-title">
-        <h2 id="contact-title" data-reveal>Say hello</h2>
-        <p className="close__lead" data-reveal style={{ '--i': 1 }}>
-          I’m always up for a good problem, an internship, or a conversation about any of the above.
-        </p>
-        <a className="close__email" href={`mailto:${EMAIL}`} data-reveal style={{ '--i': 2 }}>{EMAIL}</a>
-        <nav className="close__links" aria-label="Elsewhere" data-reveal style={{ '--i': 3 }}>
-          {contact.map((c) => <a key={c.label} href={c.href} {...external(c.href)}>{c.label}</a>)}
-        </nav>
-      </footer>
     </>
   );
 }
