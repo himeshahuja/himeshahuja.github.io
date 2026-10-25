@@ -232,7 +232,7 @@ export default function Portfolio() {
         <section id="contact" className="school" aria-labelledby="school-title">
           <div className="school__inner">
             <h2 id="school-title" data-reveal>University of Virginia</h2>
-            <p className="school__degree" data-reveal style={{ '--i': 1 }}>Computer Science and Mathematics</p>
+            <p className="school__degree" data-reveal style={{ '--i': 1 }}>Computer Science and Mathematics, Class of 2029</p>
             <a className="school__email" href={`mailto:${EMAIL}`} data-reveal style={{ '--i': 2 }}>{EMAIL}</a>
           </div>
         </section>
