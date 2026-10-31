@@ -1,187 +1,396 @@
-// The player sprite: a 24 x 34 grid per frame, drawn by hand and facing right.
-// Each letter is one pixel; "." is empty.
+// The player sprite: a 32 x 58 grid per frame, facing right. A lanky three-quarter view in a
+// leather jacket over a grey tee, faded jeans and boots, lit from the front. Each letter is one
+// pixel; "." is empty. Outlines take the darkest tone of what they edge (navy round the jeans,
+// skin shade round the hands) rather than one black line.
 
-export const SPRITE_W = 24;
-export const SPRITE_H = 34;
+export const SPRITE_W = 32;
+export const SPRITE_H = 58;
 
 export const PALETTE = {
-  K: '#14152a', // outline
-  H: '#2b2118', // hair
-  h: '#4f3a28', // hair highlight
-  S: '#b9825a', // skin
-  s: '#93623f', // skin shade
-  W: '#f4f4f4', // eye
-  D: '#262b44', // headphones
-  d: '#566c86', // headphone shine
-  G: '#ef7d57', // headphone logo, backpack, shoe stripe
-  g: '#b13e53', // backpack shade
-  Y: '#ffcd75', // zip, watch and buckle
-  T: '#dbe8ee', // shirt
-  B: '#9fbccb', // sleeves
-  C: '#6f8ea3', // collar, seams and buttons
-  L: '#4a2f1f', // belt
-  P: '#3a4466', // near leg
-  p: '#2c3452', // near leg shade
-  j: '#4f5d8a', // near leg light
-  Q: '#262c47', // far leg
-  q: '#1c2139', // far leg shade
-  t: '#f4f9fc', // shirt light
-  r: '#d6a06f', // skin light
-  O: '#f4f4f4', // shoes
-  A: '#c4602d', // soles
+  K: '#1c110c', // outline
+  H: '#3b2417', // hair, boot shade
+  h: '#643619', // hair light, belt and boots
+  L: '#8d5c35', // boot light
+  S: '#b47a52', // skin
+  s: '#87533a', // skin shade, and the edge of the hands
+  r: '#d6a074', // skin light
+  J: '#4b3b35', // jacket
+  j: '#6c5a50', // jacket light
+  D: '#2c201b', // jacket shade
+  T: '#c8d0da', // tee
+  t: '#868e98', // tee shade
+  P: '#354360', // near leg
+  p: '#222b40', // near leg shade, far leg
+  w: '#5a6b85', // faded denim
+  q: '#161c2b', // denim outline, far leg shade
+  Y: '#d4a85a', // buckle
+  W: '#efe6dc', // eye
 };
 
-// Over-ear headphones: the band runs over the crown into a cup on the ear.
-const HEAD = [
-  '..........KKKKKK........',
-  '........KKDDKHHHKK......',
-  '.......KHHDdKHhhhHHKK...',
-  '......KHHHDdHHHHhhHHHK..',
-  '.....KHHHHDdHHHHHHHHHHK.',
-  '.....KHHHKDdKHHHHHHHHHHK',
-  '....KHHHKDDdDKHHHHSSHSHK',
-  '....KHHKDdGGDDKHSSSKKSK.',
-  '....KHHKDdGGDDKSSSSWKSK.',
-  '....KHHKDdDDDDKSSSSWKSSK',
-  '....KHHKDdDDDDKSSSSSSSSK',
-  '.....KHKDDDDKsSSSSSSKK..',
-  '......KKKKKKsSSSSSKSK...',
-  '.......KHsSSSSSSSKK.....',
-  '.........KKsSSSKK.......',
-];
-
-const SHOULDERS = '...KKKKKKKKKCCTTTCCKK...';
-const BELT = '....KKKKKLLLLLLLLLLYLK..';
-
-const TORSO_REST = [
-  SHOULDERS,
-  '...KGGGGGKGTTCBBKTTTTK..',
-  '...KGgggGKTGTCBBKTCTTK..',
-  '...KGgYgGKTTGCBBKTTTTK..',
-  '...KGgggGKTTTCBBKTCTTK..',
-  '...KGGGGGKTTTCBBKTTTTK..',
-  '...KgGGGgKTTTCSSKTCTTK..',
-  '...KKgggKKTTTCYSKTTTTK..',
-  '....KKKKKLLLLKSSKLLYLK..',
-];
-
-// Near arm pumped forward, elbow bent.
-const TORSO_FORWARD = [
-  SHOULDERS,
-  '...KGGGGGKGTTTTCBBKTTK..',
-  '...KGgggGKTGTTTCBBBKKKK.',
-  '...KGgYgGKTTGTTTCBBYSSK.',
-  '...KGgggGKTTTGTTTTKKKKK.',
-  '...KGGGGGKTTTTGTCTTTTK..',
-  '...KgGGGgKTTTTTTTTTCTK..',
-  '...KKgggKKTTTTTTTTTTTK..',
-  BELT,
-];
-
-// Near arm swung back across the backpack.
-const TORSO_BACK = [
-  SHOULDERS,
-  '...KGGGGGKGTTCBBKTTTTK..',
-  '...KGgggGKKBBBKTCTTTTK..',
-  '...KGgYKBBBKTTTTTTTTTK..',
-  '...KGgKSSYKTTTTTCTTTTK..',
-  '..KSSKGGGKTTTTTTTTTTTK..',
-  '...KKgGGgKTTTTTTTTTCTK..',
-  '...KKgggKKTTTTTTTTTTTK..',
-  BELT,
-];
-
-// Arm on its way through, between the two swings.
-const TORSO_PASS = [...TORSO_REST.slice(0, 8), BELT];
-
-const LEGS_STAND = [
-  '.........KQQQQKKPPPPPK..',
-  '.........KQQQQKPPPPPPK..',
-  '.........KQQQQKPPPPPPK..',
-  '..........KQQQKPPPPPK...',
-  '..........KQQQKPPPPPK...',
-  '..........KQQQKPPPPPK...',
-  '.........KOOOOKOOOOOOK..',
-  '.........KOOGOKOOGGOOK..',
-  '.........KAAAAKAAAAAAK..',
-  '.........KKKKKKKKKKKKK..',
-];
-
-const HIPS = '.........KPPPPPPPPPPPK..';
-
-// Stride: one leg reaching forward, the other pushing back.
-const strideLegs = (b, f) => [
-  HIPS,
-  `........K${b.repeat(5)}K${f.repeat(5)}K...`,
-  `.......K${b.repeat(4)}K...K${f.repeat(4)}K..`,
-  `......K${b.repeat(4)}K.....K${f.repeat(4)}K.`,
-  `.....K${b.repeat(3)}K........K${f.repeat(3)}K.`,
-  `....K${b.repeat(3)}K.........K${f.repeat(3)}K.`,
-  `...K${b.repeat(3)}K.........KOOOOOK`,
-  '..KOOOOK.........KOGGOOK',
-  '..KAAAAK.........KAAAAAK',
-  '..KKKKKK.........KKKKKKK',
-];
-
-// Passing: one foot planted, the other knee driving through.
-const passLegs = (p, l) => [
-  HIPS,
-  `.........K${p.repeat(4)}${l.repeat(6)}K...`,
-  `.........K${p.repeat(4)}K${l.repeat(6)}K..`,
-  `.........K${p.repeat(4)}K...K${l.repeat(3)}K.`,
-  `.........K${p.repeat(4)}K...K${l.repeat(3)}K.`,
-  `..........K${p.repeat(3)}K.KOOGOOK.`,
-  `..........K${p.repeat(3)}K.KAAAAAK.`,
-  '.........KOOGOOK..KKKKK.',
-  '.........KAAAAAK........',
-  '.........KKKKKKK........',
-];
-
-const LEGS_JUMP = [
-  HIPS,
-  '........KQQQQQKPPPPPPK..',
-  '.......KQQQQK.KPPPPPK...',
-  '.......KOOGOK..KOOGOOK..',
-  '.......KAAAAK..KAAAAAK..',
-  '.......KKKKKK..KKKKKKK..',
-  '........................',
-  '........................',
-  '........................',
-  '........................',
-];
-
-// Light falls from the front: the legs take a shadow on their back edge and a
-// rim of light on their front one, and the shirt and skin catch the light
-// where they meet the outline ahead of them. Run over every frame, so the
-// shading follows each pose.
-const LIGHT = {
-  P: { back: 'p', front: 'j' },
-  Q: { back: 'q' },
-  T: { front: 't' },
-  S: { front: 'r' },
+export const FRAMES = {
+  // Standing at ease, weight on the far leg.
+  idle: [
+    '...............KK.K',
+    '.............KKhHKhK',
+    '............KHhhHHhhHK',
+    '...........KHHHHHHhhhHK',
+    '..........KHHHHHHHHHhhhKK',
+    '..........KHHHHHHHHHHHHhhK',
+    '..........KHHHHHHHHHHrHHHK',
+    '..........KHHHHHHSrrHHrK',
+    '..........KHHHHsHSrrWKrK',
+    '..........KHHHHssSSrrrrrK',
+    '...........KHHHKsSSSrsrK',
+    '...........KHHKssSSSSrK',
+    '.............KKKssSSKK',
+    '.............KDKssSsKDK',
+    '..........KKJJDKssSsKDJK',
+    '.......KKJJjJDKttttKDJjjK',
+    '.....KJjjJJJJDKtTTTKDJjJjK',
+    '....KJjjJDJjJDKtTTTKDjDJjK',
+    '....KDJjJDJjJDKtTTTKJjKJjK',
+    '....KDJjJDJjJDKtTTTKJjKJjK',
+    '....KDJjJDJjDDKtTTTKJjKJjK',
+    '....KDJjJKJjJDKtTTTKJjKJjK',
+    '....KDJjK.KjJDKtTTTKJjKJjK',
+    '....KDDjK.KjJDKtTTtKJjKDjK',
+    '....KJDjK.KjJDKtTTTKJjKDjK',
+    '....KJJDK.KjJDKtTTTKJjKDjK',
+    '....KDJjK.KjJDKttTTKJjKDjK',
+    '....KDDDK.KjJDKtTTTKJjKDDK',
+    '....sSrrs.KjJDKtTTTKJjKsrs',
+    '...sSSrrs.KjJDKtTTtKJjKsSrs',
+    '...sSSSrs.KjJDKhhYhKJjKsSSs',
+    '...sSsSSs.KjJDKPPPPKJjKsSss',
+    '....sSsSs.KDDDKPPPPKDDKssS',
+    '.....sss..KKKKKPPPPKKKK.ss',
+    '..........qpPPPwqppppPq',
+    '..........qpPPPwqppppPq',
+    '..........qpwwPwqppppPq',
+    '..........qpwwPwqppppPq',
+    '..........qpwPPwqppppPq',
+    '.........qpPwPwqqppppPq',
+    '.........qpPPPwqqppppPq',
+    '.........qpPPPwqqppppPq',
+    '........qpPPPwq.qppppPq',
+    '........qpPPPwq.qppppPq',
+    '........qpppPwq.qppppPq',
+    '.......qpPPPwq..qppppPq',
+    '.......qpPPPwq..qppppPq',
+    '.......qpPwPwq..qppppPq',
+    '.......qpPwPwq..qppppPq',
+    '......qpPPPwq...qppppPq',
+    '......qpPPPwq...qppppPq',
+    '......qppPPPwq..qpppppPq',
+    '......KHhhhLK...KHHHHhK',
+    '.....KHHhhhhLK.KHHHHHhK',
+    '.....KHhhhhhhLKKHHHHHHhK',
+    '.....KHhhhhhhhLKHHHHHHHhK',
+    '.....KLLLLLLLLLKhhhhhhhhK',
+    '.....KKKKKKKKKKKKKKKKKKKK',
+  ],
+  // Contact: near leg reaching forward, far leg pushing off behind; the body dips a row.
+  run1: [
+    '',
+    '................KK.K',
+    '..............KKhHKhK',
+    '.............KHhhHHhhHK',
+    '............KHHHHHHhhhHK',
+    '...........KHHHHHHHHHhhhKK',
+    '...........KHHHHHHHHHHHHhhK',
+    '...........KHHHHHHHHHHrHHHK',
+    '...........KHHHHHHSrrHHrK',
+    '...........KHHHHsHSrrWKrK',
+    '...........KHHHHssSSrrrrrK',
+    '............KHHHKsSSSrsrK',
+    '............KHHKssSSSSrK',
+    '..............KKKssSSKK',
+    '..............KDKssSsKDK',
+    '...........KKJJDKssSsKDJK',
+    '.........KKKKJDKttttKDJjK',
+    '........KDjjjKDKtTTTKDJjK',
+    '........KDJJjKDKtTTTKDjjK..sss',
+    '.......KDJJJjKDKtTTTKJjjKKssrrs',
+    '.......KDJJjKJDKtTTTKJjjKssSSrs',
+    '......KDJJJjKDDKtTTTKJjjKssSrs',
+    '......KDJJjKjJDKtTTTKJjjKJsssK',
+    '.....KDJJjKjJJDKtTTTKJjDKJJsK',
+    '.....KDJJjKjJJDKtTTtKJjDKJjK',
+    '.....KDJjKKjJJDKtTTTKJjDKJjK',
+    '....KDJJjKKjJJDKtTTTKJjDKjK',
+    '....KDJJjKKjJJDKttTTKJjDKK',
+    '....KssjK.KjJJDKtTTTKJjDK',
+    '....ssrsK.KjJJDKtTTTKJjDK',
+    '...ssSSrs.KjJJDKtTTtKJjDK',
+    '...ssSrs..KjJJDKhhYhKJjDK',
+    '...ssSrs..KjJJDKPPPPKJjDK',
+    '....sss...KDDDDKPPPPKDDDK',
+    '..........KKKKKKPPPPKKKKK',
+    '.............qpPPPwq',
+    '............qqpPPPPwq',
+    '...........qqqpPPPPPwq',
+    '...........qqqpPPPPPwq',
+    '..........qqppqpPPPPPwq',
+    '.........qqppppqpPPPPPwq',
+    '.........qqppppqpPPPPPwq',
+    '........qqpppppPqpPPPPPwq',
+    '.......qqpppppPq.qpPPPPwq',
+    '......qqppppppPq.qpPPPPwq',
+    '.....qqppppppPq...qpPPPwq',
+    '....qqpppppPqq.....qpPPPwq',
+    '...qqpppppPq.......qpPPPwq',
+    '...qqppppPq........qpPPPwq',
+    '...KqqpPqq..........qpPPPwq',
+    '..KHHqqq............qpPPPwq',
+    '..KHHHhK............qpPPPwq',
+    '..KHHhK.............qpPPPwqKK',
+    '..KHHhK..............qpPPwqLLK',
+    '...KKK...............qpPPwqhhLK',
+    '......................qqqqhhhLK',
+    '.........................KKHLK',
+    '...........................KK',
+  ],
+  // Passing: near foot planted under the hips, far knee driving through.
+  run2: [
+    '................KK.K',
+    '..............KKhHKhK',
+    '.............KHhhHHhhHK',
+    '............KHHHHHHhhhHK',
+    '...........KHHHHHHHHHhhhKK',
+    '...........KHHHHHHHHHHHHhhK',
+    '...........KHHHHHHHHHHrHHHK',
+    '...........KHHHHHHSrrHHrK',
+    '...........KHHHHsHSrrWKrK',
+    '...........KHHHHssSSrrrrrK',
+    '............KHHHKsSSSrsrK',
+    '............KHHKssSSSSrK',
+    '..............KKKssSSKK',
+    '..............KDKssSsKDK',
+    '...........KKJJDKssSsKDJK',
+    '.........KKKKJDKttttKDJjK',
+    '........KDjjjKDKtTTTKDJjK',
+    '........KDJJjKDKtTTTKDjjK',
+    '........KDJJjKDKtTTTKJjjK',
+    '........KDJJjKDKtTTTKJjjK',
+    '........KDJjKDDKtTTTKJjjK',
+    '........KDJjKJDKtTTTKJjjK',
+    '.......KDJJjKJDKtTTTKJjDK',
+    '.......KDJJjKJDKtTTtKJjDK',
+    '.......KDJJjKJDKtTTTKJjDK',
+    '.......KDJJjKJDKtTTTKJjDK',
+    '........KDJJjKDKttTTKJjDK',
+    '.........KDsssDKtTTTKJjDK',
+    '.........KssrrsKtTTTKJjDK',
+    '..........ssSrsKtTTtKJjDK',
+    '..........ssSSrshhYhKJjDK',
+    '..........KssrsKPPPPKJjDK',
+    '..........KDssDKPPPPKDDDK',
+    '..........KKKKKKPPPPKKKKK',
+    '.............qpPPPwq',
+    '.............qpPPPwqq',
+    '.............qpPPPPwqq',
+    '.............qpPPPPwqPq',
+    '.............qpPPPPwqPq',
+    '.............qpPPPPwqpPq',
+    '.............qpPPPPwqppPq',
+    '.............qpPPPPwqppPq',
+    '.............qpPPPPwqppPq',
+    '.............qpPPPPwqpPq',
+    '.............qqpPPPwqqq',
+    '............qqqpPPPwq',
+    '............qqqpPPPwq',
+    '............qqqpPPPwq',
+    '.............qqpPPwq',
+    '.............qpPPPwq',
+    '.............qpPPPwq',
+    '.............qpPPPwq',
+    '.............qpPPPwqKK',
+    '.............qpPPPwqLLK',
+    '..............qpPwqhhLK',
+    '...............qqqhhhLK',
+    '.................KKHhLK',
+    '...................KKK',
+  ],
+  // Contact again, legs and arms swapped.
+  run3: [
+    '',
+    '................KK.K',
+    '..............KKhHKhK',
+    '.............KHhhHHhhHK',
+    '............KHHHHHHhhhHK',
+    '...........KHHHHHHHHHhhhKK',
+    '...........KHHHHHHHHHHHHhhK',
+    '...........KHHHHHHHHHHrHHHK',
+    '...........KHHHHHHSrrHHrK',
+    '...........KHHHHsHSrrWKrK',
+    '...........KHHHHssSSrrrrrK',
+    '............KHHHKsSSSrsrK',
+    '............KHHKssSSSSrK',
+    '..............KKKssSSKK',
+    '..............KDKssSsKDK',
+    '...........KKJJDKssSsKDJK',
+    '.........KKKKJDKttttKDJjK',
+    '........KDjjjKDKtTTTKDJjK',
+    '........KDJJjKDKtTTTssjjK',
+    '........KDJJJjKKtTTssrsjK',
+    '.........KDJJJjKtKssSSrsK',
+    '..........KDJJjKKssSSrsjK',
+    '..........KDJJJjJJssrsjjK',
+    '..........KKDJJJJJJssJjDK',
+    '..........KjKDJJJJjKKJjDK',
+    '..........KjJKDJJjKTKJjDK',
+    '..........KjJKDJjKTTKJjDK',
+    '..........KjJJKKKtTTKJjDK',
+    '..........KjJJDKtTTTKJjDK',
+    '..........KjJJDKtTTTKJjDK',
+    '..........KjJJDKtTTtKJjDK',
+    '..........KjJJDKhhYhKJjDK',
+    '..........KjJJDKPPPPKJjDK',
+    '..........KDDDDKPPPPKDDDK',
+    '..........KKKKKKPPPPKKKKK',
+    '.............qpPPPwq',
+    '............qpPPPPwqq',
+    '...........qpPPPPPwqPq',
+    '...........qpPPPPPwqPq',
+    '..........qpPPPPPwqppPq',
+    '.........qpPPPPPwqppppPq',
+    '.........qpPPPPPwqppppPq',
+    '........qpPPPPPwqqpppppPq',
+    '.......qpPPPPPwq.qqppppPq',
+    '......qpPPPPPPwq.qqppppPq',
+    '.....qpPPPPPPwq...qqpppPq',
+    '....qpPPPPPwqq.....qqpppPq',
+    '...qpPPPPPwq.......qqpppPq',
+    '...qpPPPPwq........qqpppPq',
+    '...KqpPwqq..........qqpppPq',
+    '..KHhqqq............qqpppPq',
+    '..KHhhLK............qqpppPq',
+    '..KHhLK.............qqpppPqKK',
+    '..KHhLK..............qqppPqhhK',
+    '...KKK...............qqppPqHHhK',
+    '......................qqqqHHHhK',
+    '.........................KKHhK',
+    '...........................KK',
+  ],
+  // Passing, the near knee coming through.
+  run4: [
+    '................KK.K',
+    '..............KKhHKhK',
+    '.............KHhhHHhhHK',
+    '............KHHHHHHhhhHK',
+    '...........KHHHHHHHHHhhhKK',
+    '...........KHHHHHHHHHHHHhhK',
+    '...........KHHHHHHHHHHrHHHK',
+    '...........KHHHHHHSrrHHrK',
+    '...........KHHHHsHSrrWKrK',
+    '...........KHHHHssSSrrrrrK',
+    '............KHHHKsSSSrsrK',
+    '............KHHKssSSSSrK',
+    '..............KKKssSSKK',
+    '..............KDKssSsKDK',
+    '...........KKJJDKssSsKDJK',
+    '.........KKKKJDKttttKDJjK',
+    '........KDjjjKDKtTTTKDJjK',
+    '........KDJJjKDKtTTTKDjjK',
+    '........KDJJjKDKtTTTKJjjK',
+    '........KDJJjKDKtTTTKJjjK',
+    '........KDJJjKDKtTTTKJjjK',
+    '........KDJJjKDKtTTTKJjjK',
+    '........KDJJjKDKtTTTKJjDK',
+    '........KDJJjKDKtTTtKJjDK',
+    '........KDJJjKDKtTTTKJjDK',
+    '........KDJJJjKKtTTTKJjDK',
+    '.........KDJJjKKttTTKJjDK',
+    '..........KDJssKtTTTKJjDK',
+    '..........KKssrsKTTTKJjDK',
+    '..........KKssSrsTTtKJjDK',
+    '..........KjssSrshYhKJjDK',
+    '..........KjJsssPPPPKJjDK',
+    '..........KDDDsKPPPPKDDDK',
+    '..........KKKKKKPPPPKKKKK',
+    '.............qpPPPwq',
+    '.............qpPPPPwq',
+    '.............qpPPPPPwq',
+    '.............qpPPPPPPwq',
+    '.............qqpPPPPPwq',
+    '.............qqqpPPPPPwq',
+    '.............qqpqpPPPPPwq',
+    '.............qqpqpPPPPPwq',
+    '.............qqqpPPPPPPwq',
+    '.............qqpPPPPPPwq',
+    '.............qpPPPPPwqq',
+    '............qpPPPPPwq',
+    '............qpPPPPwqq',
+    '............qpPPPwqPq',
+    '.............qpwqqLK',
+    '.............qqqhhLK',
+    '.............qqKHhLK',
+    '.............qqKHhLK',
+    '.............qqpKKKqKK',
+    '.............qqpppPqhhK',
+    '..............qqpPqHHhK',
+    '...............qqqHHHhK',
+    '.................KKHHhK',
+    '...................KKK',
+  ],
+  // A fist in the air for every coin.
+  jump: [
+    '................KK.K',
+    '........sss...KKhHKhK',
+    '.......ssrrs.KHhhHHhhHK',
+    '.......ssSrsKHHHHHHhhhHK',
+    '......KssSrKHHHHHHHHHhhhKK',
+    '......KssrsKHHHHHHHHHHHHhhK',
+    '......KDssKKHHHHHHHHHHrHHHK',
+    '......KDJjKKHHHHHHSrrHHrK',
+    '.....KDJJjKKHHHHsHSrrWKrK',
+    '.....KDJJjKKHHHHssSSrrrrrK',
+    '.....KDJjK..KHHHKsSSSrsrK',
+    '.....KDJJjK.KHHKssSSSSrK',
+    '.....KDJJjK...KKKssSSKK',
+    '.....KDJJJjK..KDKssSsKDK',
+    '......KDJJjKKJJDKssSsKDJK',
+    '.......KDJJjKJDKttttKDJjK',
+    '.......KDJJJjKDKtTTTKDJjK',
+    '........KDJJjKDKtTTTKDjjK',
+    '........KDJJjKDKtTTTKJjjKK',
+    '.........KKKKJDKtTTTKJjjKjK',
+    '..........KJjDDKtTTTKJjjKjK',
+    '..........KJjJDKtTTTKJjjKJjK',
+    '..........KjJJDKtTTTKJjDKJjK',
+    '..........KjJJDKtTTtKJjDKJJjK',
+    '..........KjJJDKtTTTKJjDKJJjK',
+    '..........KjJJDKtTTTKJjDKDJssK',
+    '..........KjJJDKttTTKJjDKDssrs',
+    '..........KjJJDKtTTTKJjDKssSSrs',
+    '..........KjJJDKtTTTKJjDK.ssSrs',
+    '..........KjJJDKtTTtKJjDK.ssSrs',
+    '..........KjJJDKhhYhKJjDK..sss',
+    '..........KjJJDKPPPPKJjDK',
+    '..........KDDDDKPPPPKDDDK',
+    '..........KKKKKKPPPPKKKKK',
+    '.............qpPPPPwqq',
+    '............qqpPPPPPwwq',
+    '............qqpPPPPPPPwq',
+    '...........qqqpPPPPPPPPwq',
+    '..........qqppqqpPPPPPPwq',
+    '..........qqppppqpPPPPPwq',
+    '..........qqppppPqpPPPPwq',
+    '..........qqpppPqpPPPPwq',
+    '.........qqppppPqpPPPwq',
+    '.........qqpppPqpPPPPwq',
+    '.........qqpppPqpPPPwq',
+    '........qqpppPqqpPPPwqK',
+    '........qqpppPqqpPPwqhLK',
+    '........qqpppPqKqpwqhhLK',
+    '........qqppPqHhKqqHhhLK',
+    '.........qqPqHHhK..KKKK',
+    '..........qqHHHhK',
+    '............KKKK',
+  ],
 };
-const edge = (c) => c === 'K' || c === '.' || c === undefined;
 
-function light(rows) {
-  return rows.map((row) => [...row].map((c, x) => {
-    const rule = LIGHT[c];
-    if (!rule) return c;
-    if (rule.back && edge(row[x - 1])) return rule.back;
-    if (rule.front && edge(row[x + 1])) return rule.front;
-    return c;
-  }).join(''));
-}
-
-export const FRAMES = Object.fromEntries(Object.entries({
-  idle: [...HEAD, ...TORSO_REST, ...LEGS_STAND],
-  run1: [...HEAD, ...TORSO_FORWARD, ...strideLegs('Q', 'P')],
-  run2: [...HEAD, ...TORSO_PASS, ...passLegs('Q', 'P')],
-  run3: [...HEAD, ...TORSO_BACK, ...strideLegs('P', 'Q')],
-  run4: [...HEAD, ...TORSO_PASS, ...passLegs('P', 'Q')],
-  jump: [...HEAD, ...TORSO_FORWARD, ...LEGS_JUMP],
-}).map(([name, rows]) => [name, light(rows)]));
-
-// Drawn over any frame now and then: the eye closes for a blink.
-export const BLINK = [{ x: 19, y: 8, w: 2, fill: PALETTE.S }, { x: 19, y: 9, w: 2, fill: PALETTE.K }];
+// Drawn over the standing frame now and then: the eye closes for a blink.
+export const BLINK = [{ x: 20, y: 8, w: 2, fill: PALETTE.s }];
 
 export const RUN_CYCLE = ['run1', 'run2', 'run3', 'run4'];

@@ -186,7 +186,7 @@ export default function World({ intro, projects, jobs, school, resume }) {
       marker: markers[i],
     }));
     const pl = playerRef.current;
-    const stride = (pl.offsetWidth / SPRITE_W) * 7;
+    const stride = (pl.offsetWidth / SPRITE_W) * 10;
     const playerX = pl.offsetLeft + pl.offsetWidth / 2;
     const foot = pl.offsetWidth * 0.3;
     geo.current = { vw, h, D, top, stations, stride, playerX, foot };
