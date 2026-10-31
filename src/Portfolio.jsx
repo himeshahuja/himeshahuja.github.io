@@ -48,6 +48,14 @@ const projects = [
     play: 'https://himeshahuja.github.io/rubiks-cube/',
     code: `${GITHUB}/rubiks-cube`,
   },
+  {
+    title: 'Net Worth',
+    text: 'My net worth, read from my accounts through Plaid twice a week and kept behind a password.',
+    image: '/work/net-worth.jpg',
+    // The real figures are encrypted; this opens the same dashboard with sample ones.
+    play: 'https://himeshahuja.github.io/net-worth/?sample',
+    code: `${GITHUB}/net-worth`,
+  },
 ];
 
 const jobs = [

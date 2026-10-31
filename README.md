@@ -12,6 +12,7 @@ Personal site of Himesh Ahuja, a computer science student at the University of V
 - [AI Minesweeper](https://himeshahuja.github.io/ai-minesweeper/): Minesweeper with an AI that deduces safe moves
 - [Maze Generator and Solver](https://himeshahuja.github.io/maze-solver/): generates mazes and animates DFS, BFS and A* solving them
 - [Rubik's Cube](https://himeshahuja.github.io/rubiks-cube/): a 3D cube to turn, scramble and solve
+- [Net Worth](https://himeshahuja.github.io/net-worth/?sample): my net worth, read through Plaid twice a week and kept behind a password; the link opens it with sample figures
 
 ## Development
 
