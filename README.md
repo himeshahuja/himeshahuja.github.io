@@ -2,6 +2,8 @@
 
 Personal site of Himesh Ahuja, a computer science student at the University of Virginia.
 
+The site is a galaxy drawn in Three.js. Every bright star is a node in a graph: click two stars and A* finds a path between them. Scrolling flies the camera along A* routes to seven small worlds, one per project, each built in code from what the project does. The route ends at a black hole.
+
 **Live:** https://himeshahuja.github.io/
 
 ## Projects you can try in the browser
@@ -16,7 +18,7 @@ Personal site of Himesh Ahuja, a computer science student at the University of V
 
 ## Development
 
-Built with React and Vite.
+Built with React, Vite and Three.js. The 3D layer lives in `src/space/`: `Space.js` runs the scene and the scroll-driven camera, `galaxy.js` draws the stars, `graph.js` holds the nearest-neighbour graph and A*, and `systems.js` builds the seven project worlds and the black hole.
 
 ```sh
 npm install
