@@ -15,8 +15,8 @@ const FOV = 40;
 const TAN = Math.tan((FOV / 2) * (Math.PI / 180));
 const UP = new THREE.Vector3(0, 1, 0);
 const AMBER = '#ffb23f';
-// Where the seven worlds sit: along one arm, spiralling in toward the core.
-const RADII = [50, 44, 38.5, 33.5, 28.5, 24, 19.5];
+// Where the worlds sit, one per project: along one arm, spiralling in toward the core.
+const RADII = [50, 44, 38.5, 33.5, 28.5, 24, 19.5, 15.5];
 const CLEAR = 4.8;
 // The end of the route: a black hole out beyond the galaxy's rim.
 const END = new THREE.Vector3(0, 95, 280);
@@ -31,7 +31,7 @@ const blend = (a, b, t) => ({
 });
 
 // The whole page's 3D layer: one fixed canvas whose camera is driven by the
-// scroll position, from the galaxy overview through the seven worlds and out.
+// scroll position, from the galaxy overview through the project worlds and out.
 export default class Space {
   constructor(host, { reduced = false, onActive } = {}) {
     this.host = host;
@@ -83,7 +83,7 @@ export default class Space {
     if (reduced) for (const m of this.starMats) m.uniforms.uTwinkle.value = 0;
 
     // The navigable stars: the graph every route on the page runs across. The
-    // seven worlds are its last seven nodes.
+    // worlds are its last nodes, one per radius.
     const navN = (this.navN = weak ? 1400 : 2200);
     const W = navN + RADII.length;
     const navPos = new Float32Array(W * 3);
@@ -426,7 +426,9 @@ export default class Space {
       const grow = smooth((75 - dist) / 30);
       w.group.visible = grow > 0.001;
       w.group.scale.setScalar(Math.max(grow, 0.001));
-      if (!this.reduced && w.group.visible) w.update(t, dt);
+      if (!w.group.visible) continue;
+      if (this.reduced) w.face?.(this.camera);
+      else w.update(t, dt, this.camera);
     }
     this.hole.group.getWorldPosition(wp);
     this.hole.group.visible = wp.distanceTo(cp) < 160;

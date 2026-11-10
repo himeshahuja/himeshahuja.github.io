@@ -262,13 +262,53 @@ main {
   background: var(--surface);
 }
 
+/* The title is the current world's name: one word to a line, sized so the
+   longest word (Minesweeper) fits the column. */
+.work-copy {
+  container-type: inline-size;
+}
+
 .work-title {
+  display: grid;
   font-family: var(--display);
-  font-size: var(--step-head);
+  font-size: min(var(--step-head), 100cqi / 9.9);
   font-weight: 800;
   line-height: 0.95;
   letter-spacing: -0.03em;
   text-transform: uppercase;
+}
+
+.work-name {
+  grid-area: 1 / 1;
+  visibility: hidden;
+  transition: visibility 0s linear 260ms;
+}
+
+.work-name.is-active {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.work-name .line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.06em;
+}
+
+.work-name .line > span {
+  display: inline-block;
+  transform: translateY(-108%);
+  transition: transform 260ms var(--ease-out);
+}
+
+/* The outgoing name leaves upward; the incoming one rises from below. */
+.work-name.is-active .line > span {
+  transform: none;
+  animation: rise 800ms var(--ease-expo) 120ms both;
+}
+
+.work-name.is-active .line + .line > span {
+  animation-delay: 190ms;
 }
 
 .work-detail {
@@ -857,10 +897,21 @@ html.js [data-reveal].is-in {
     display: contents;
   }
 
+  /* One line here, sized so "AI Minesweeper" fits the screen. */
   .work-title {
     grid-area: title;
     padding: calc(var(--m) + 52px) var(--m) 0;
     background: var(--surface);
+    font-size: min(var(--step-head), (100vw - 2 * var(--m)) / 12.6);
+  }
+
+  .work-name .line {
+    display: inline-block;
+    vertical-align: top;
+  }
+
+  .work-name .line + .line {
+    margin-left: 0.3em;
   }
 
   .work-index {

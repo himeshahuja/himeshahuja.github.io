@@ -29,6 +29,12 @@ const projects = [
     play: 'https://himeshahuja.github.io/ai-minesweeper/',
   },
   {
+    title: 'Wordle Solver',
+    text: 'Each guess is the one whose colours should reveal the most. Every answer solved within six.',
+    verb: 'Watch it solve',
+    play: 'https://himeshahuja.github.io/wordle-solver/',
+  },
+  {
     title: 'Load Balancer',
     text: 'Six routing algorithms, one slow server, and what each choice does to tail latency.',
     verb: 'Route the traffic',
@@ -203,7 +209,13 @@ export default function Portfolio() {
         <section className="work" id="work" ref={work} style={{ '--n': projects.length }} aria-labelledby="work-title">
           <div className="work-stage" ref={stage}>
             <div className="work-copy">
-              <h2 className="work-title" id="work-title">Seven worlds</h2>
+              <h2 className="work-title" id="work-title">
+                {projects.map((p, i) => (
+                  <span key={p.title} className={`work-name${i === active ? ' is-active' : ''}`} aria-hidden={i !== active}>
+                    {p.title.split(' ').map((word) => <span key={word} className="line"><span>{word}</span></span>)}
+                  </span>
+                ))}
+              </h2>
               <div className="work-detail">
                 {projects.map((p, i) => (
                   <div key={p.title} className={`proj${i === active ? ' is-active' : ''}`} inert={i !== active}>

@@ -9,14 +9,16 @@ import { astar, bfsGrid, buildGraph, rng } from './graph.js';
 import { SignalPoints } from './galaxy.js';
 
 // Each project is a small world built from what the project does. Every
-// builder returns { group, radius, update(t, dt) }; t is seconds, and a
-// reduced-motion visit passes one fixed t.
+// builder returns { group, radius, update(t, dt, camera) }; t is seconds, and a
+// reduced-motion visit passes one fixed t. A world with face(camera) is turned
+// to the camera even when nothing else moves.
 
 const ICE = '#9fe8ff';
 const AMBER = '#ffb23f';
 const RED = '#ff5d5d';
 
 const clamp = (v, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
+const lerp = (a, b, t) => a + (b - a) * t;
 const easeOut = (p) => 1 - Math.pow(1 - clamp(p), 3);
 const easeInOut = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
 const std = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0.15, ...extra });
@@ -329,6 +331,212 @@ export function mineWorld() {
       tiles.instanceColor.needsUpdate = true;
       flags.instanceMatrix.needsUpdate = true;
       for (const d of digits) d.visible = tau >= revealAt[d.userData.cell] + 0.1;
+    },
+  };
+}
+
+// Wordle Solver: real games from the solver, played on a board. Around it
+// orbit all 2,309 possible answers; each guess's colours put out the ones
+// that no longer fit, until one is left burning.
+const GAMES = [
+  ['orbit', [['soare', '01010', 59], ['cutin', '00120', 2], ['droit', '02122', 1], ['orbit', '22222', 1]]],
+  ['light', [['soare', '00000', 182], ['clint', '01102', 2], ['light', '22222', 1]]],
+  ['pixel', [['soare', '00001', 119], ['denet', '00020', 5], ['bicep', '02021', 1], ['pixel', '22222', 1]]],
+  ['graph', [['soare', '00210', 40], ['clint', '00000', 4], ['drama', '02200', 2], ['graph', '22222', 1]]],
+  ['lunar', [['soare', '00110', 42], ['radar', '00022', 3], ['cigar', '00022', 1], ['lunar', '22222', 1]]],
+  ['logic', [['soare', '02000', 87], ['culty', '10100', 1], ['logic', '22222', 1]]],
+];
+const ANSWERS = 2309;
+const GREEN = '#3fbf74';
+
+const WORDLE_VERT = /* glsl */ `
+  attribute float aSize;
+  attribute vec4 aTint;
+  uniform float uScale;
+  uniform float uMax;
+  varying vec3 vColor;
+  varying float vAlpha;
+  void main() {
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    gl_PointSize = min(uMax, aSize * uScale / -mv.z);
+    vColor = aTint.rgb;
+    vAlpha = aTint.a;
+    gl_Position = projectionMatrix * mv;
+  }
+`;
+const WORDLE_FRAG = /* glsl */ `
+  varying vec3 vColor;
+  varying float vAlpha;
+  void main() {
+    float d = length(gl_PointCoord - 0.5) * 2.0;
+    if (d > 1.0) discard;
+    gl_FragColor = vec4(vColor, (exp(-d * d * 9.0) + exp(-d * d * 2.2) * 0.4) * vAlpha);
+  }
+`;
+
+export function wordleWorld() {
+  const group = new THREE.Group();
+  const board = new THREE.Group();
+  board.rotation.order = 'YXZ';
+  group.add(board);
+
+  const ROWS = 6, COLS = 5, S = 0.6, P = 10;
+  const blank = new THREE.Color('#17252d'), typed = new THREE.Color('#2e4652');
+  const shades = [new THREE.Color('#3d4d56'), new THREE.Color('#e2a93a'), new THREE.Color(GREEN)];
+  const tileGeo = new RoundedBoxGeometry(0.53, 0.53, 0.14, 3, 0.05);
+  const faceGeo = new THREE.PlaneGeometry(0.42, 0.42);
+  const letters = new Map();
+  const letter = (ch) => {
+    if (!letters.has(ch)) {
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 128;
+      const x = cv.getContext('2d');
+      x.fillStyle = '#ffffff';
+      x.font = '800 86px Unbounded, "Arial Black", sans-serif';
+      x.textAlign = 'center';
+      x.textBaseline = 'middle';
+      x.fillText(ch.toUpperCase(), 64, 70);
+      const tex = new THREE.CanvasTexture(cv);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 4;
+      letters.set(ch, tex);
+    }
+    return letters.get(ch);
+  };
+
+  const tiles = [];
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const pivot = new THREE.Group();
+    pivot.position.set((c - (COLS - 1) / 2) * S, ((ROWS - 1) / 2 - r) * S, 0);
+    const box = new THREE.Mesh(tileGeo, std('#ffffff', { roughness: 0.45, emissive: '#000000' }));
+    const face = new THREE.Mesh(faceGeo, new THREE.MeshBasicMaterial({ color: '#d5dde0', transparent: true, toneMapped: false, depthWrite: false }));
+    face.position.z = 0.072;
+    pivot.add(box, face);
+    board.add(pivot);
+    tiles.push({ pivot, box, face });
+  }
+
+  // The answers: a ring of points around the board.
+  const pos = new Float32Array(ANSWERS * 3), tint = new Float32Array(ANSWERS * 4), size = new Float32Array(ANSWERS);
+  const ring = new Float32Array(ANSWERS * 4); // angle, radius, height, speed
+  const die = new Float32Array(ANSWERS);
+  const seedRing = rng(2309);
+  for (let i = 0; i < ANSWERS; i++) {
+    const u = seedRing();
+    ring[i * 4] = seedRing() * Math.PI * 2;
+    ring[i * 4 + 1] = 2.75 + u * u * 1.5 + seedRing() * 0.25;
+    ring[i * 4 + 2] = (seedRing() - 0.5) * (0.22 + u * 0.5);
+    ring[i * 4 + 3] = 0.16 + seedRing() * 0.1;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('aTint', new THREE.BufferAttribute(tint, 4));
+  geo.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uScale: { value: 400 }, uMax: { value: 26 } },
+    vertexShader: WORDLE_VERT, fragmentShader: WORDLE_FRAG,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  });
+  mat.userData = { maxPx: 26 };
+  const cloud = new THREE.Points(geo, mat);
+  cloud.frustumCulled = false;
+  cloud.rotation.set(0.16, 0, -0.1);
+  group.add(cloud);
+
+  let cycle = -1, rows = [], ends = [], solvedAt = 0;
+  const plan = (k) => {
+    const [, guesses] = GAMES[k % GAMES.length];
+    const gap = Math.min(1.75, 6.6 / guesses.length);
+    rows = guesses.map(([word, colours], r) => ({ word, colours: [...colours].map(Number), at: 0.5 + r * gap }));
+    // When each row's colours are all showing, and how many answers they leave.
+    ends = rows.map((row) => row.at + 0.5 + 4 * 0.11 + 0.3);
+    solvedAt = ends[ends.length - 1];
+    const order = Array.from({ length: ANSWERS }, (_, i) => i);
+    const r = rng(k * 17 + 3);
+    for (let i = ANSWERS - 1; i > 0; i--) { const j = (r() * (i + 1)) | 0; [order[i], order[j]] = [order[j], order[i]]; }
+    // order[0] is the answer. Every other point goes out with the first guess
+    // that leaves fewer answers than its place in the order.
+    die[order[0]] = Infinity;
+    for (let i = 1; i < ANSWERS; i++) {
+      const s = guesses.findIndex((g) => g[2] <= i);
+      die[order[i]] = ends[s] + r() * 0.25;
+    }
+    plan.answer = order[0];
+    tiles.forEach((tile, i) => {
+      const row = rows[(i / COLS) | 0];
+      tile.face.material.map = row ? letter(row.word[i % COLS]) : null;
+      tile.face.material.needsUpdate = true;
+    });
+  };
+
+  const ice = new THREE.Color(ICE), green = new THREE.Color(GREEN).multiplyScalar(1.6), col = new THREE.Color();
+  const pale = new THREE.Color('#d5dde0'), ink = new THREE.Color('#071014');
+  const v = new THREE.Vector3();
+  let yaw = 0;
+
+  return {
+    group, radius: 3.1,
+    // The board turns to whoever is looking.
+    face(camera) {
+      if (!camera || !group.parent) return;
+      group.parent.worldToLocal(camera.getWorldPosition(v)).sub(group.position);
+      yaw = Math.atan2(v.x, v.z);
+      board.rotation.set(-Math.atan2(v.y, Math.hypot(v.x, v.z)) * 0.55, yaw, 0);
+    },
+    update(t, dt, camera) {
+      const k = Math.floor(t / P), tau = t - k * P;
+      if (k !== cycle) { cycle = k; plan(k); }
+      this.face(camera);
+      board.rotation.y = yaw + Math.sin(t * 0.35) * 0.16;
+      const out = easeInOut(clamp((tau - (P - 0.7)) / 0.55)); // the board clears for the next game
+
+      tiles.forEach((tile, i) => {
+        const r = (i / COLS) | 0, c = i % COLS, row = rows[r];
+        let flip = 0, shade = blank, lit = 0, shown = 0, pop = 1;
+        if (row && out < 0.5) {
+          const typedAt = row.at + c * 0.07, flipAt = row.at + 0.5 + c * 0.11;
+          shown = tau >= typedAt ? 1 : 0;
+          pop = 1 + 0.12 * Math.sin(Math.PI * clamp((tau - typedAt) / 0.16));
+          const p = clamp((tau - flipAt) / 0.34);
+          flip = Math.sin(Math.PI * p) * (Math.PI / 2);
+          shade = p >= 0.5 ? shades[row.colours[c]] : shown ? typed : blank;
+          lit = p >= 0.5 ? (row.colours[c] ? 0.22 : 0.03) : 0;
+          // The solved row takes a bow.
+          if (r === rows.length - 1) tile.pivot.position.z = 0.22 * Math.sin(Math.PI * clamp((tau - solvedAt - c * 0.08) / 0.5));
+          else tile.pivot.position.z = 0;
+        } else tile.pivot.position.z = 0;
+        const turn = Math.sin(Math.PI * clamp(out)) * (Math.PI / 2);
+        tile.pivot.rotation.x = flip + turn;
+        tile.pivot.scale.setScalar(pop);
+        tile.box.material.color.copy(shade);
+        tile.box.material.emissive.copy(shade).multiplyScalar(lit);
+        // Pale letters on the dark tiles, dark ones on yellow and green.
+        tile.face.material.color.copy(lit > 0.1 ? ink : pale);
+        tile.face.visible = shown === 1;
+      });
+
+      // How many answers are still standing decides how bright each one burns.
+      let stage = 0;
+      while (stage < ends.length && tau >= ends[stage]) stage++;
+      const few = stage === 0 ? 0 : clamp(1 - Math.log2(GAMES[cycle % GAMES.length][1][stage - 1][2]) / 8);
+      const back = 1 - out;
+      for (let i = 0; i < ANSWERS; i++) {
+        const gone = easeOut((tau - die[i]) / 0.9) * back;
+        const a = ring[i * 4] + t * ring[i * 4 + 3];
+        const rad = ring[i * 4 + 1] + gone * 0.5;
+        pos[i * 3] = Math.cos(a) * rad;
+        pos[i * 3 + 1] = ring[i * 4 + 2] * (1 + gone * 0.8);
+        pos[i * 3 + 2] = Math.sin(a) * rad;
+        const won = i === plan.answer ? easeOut((tau - solvedAt) / 0.4) * back : 0;
+        col.copy(ice).lerp(green, won);
+        tint[i * 4] = col.r; tint[i * 4 + 1] = col.g; tint[i * 4 + 2] = col.b;
+        // An answer that no longer fits stays as dust, so the ring keeps its shape.
+        tint[i * 4 + 3] = lerp(0.55 + 0.45 * few * back, 0.13, gone);
+        size[i] = lerp(0.11 + 0.3 * few * back, 0.07, gone) + won * 0.35;
+      }
+      geo.attributes.position.needsUpdate = true;
+      geo.attributes.aTint.needsUpdate = true;
+      geo.attributes.aSize.needsUpdate = true;
     },
   };
 }
@@ -791,4 +999,4 @@ export function blackHoleWorld() {
   };
 }
 
-export const WORLDS = [mapWorld, raftWorld, mineWorld, balancerWorld, mazeWorld, cubeWorld, lockWorld];
+export const WORLDS = [mapWorld, raftWorld, mineWorld, wordleWorld, balancerWorld, mazeWorld, cubeWorld, lockWorld];
