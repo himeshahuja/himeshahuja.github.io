@@ -7,6 +7,7 @@ import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
 import { astar, bfsGrid, buildGraph, rng } from './graph.js';
 import { SignalPoints } from './galaxy.js';
+import { ANSWERS, OTHERS } from './words.js';
 
 // Each project is a small world built from what the project does. Every
 // builder returns { group, radius, update(t, dt, camera) }; t is seconds, and a
@@ -335,19 +336,22 @@ export function mineWorld() {
   };
 }
 
-// Wordle Solver: real games from the solver, played on a board. Around it
-// orbit all 2,309 possible answers; each guess's colours put out the ones
-// that no longer fit, until one is left burning.
-const GAMES = [
-  ['orbit', [['soare', '01010', 59], ['cutin', '00120', 2], ['droit', '02122', 1], ['orbit', '22222', 1]]],
-  ['light', [['soare', '00000', 182], ['clint', '01102', 2], ['light', '22222', 1]]],
-  ['pixel', [['soare', '00001', 119], ['denet', '00020', 5], ['bicep', '02021', 1], ['pixel', '22222', 1]]],
-  ['graph', [['soare', '00210', 40], ['clint', '00000', 4], ['drama', '02200', 2], ['graph', '22222', 1]]],
-  ['lunar', [['soare', '00110', 42], ['radar', '00022', 3], ['cigar', '00022', 1], ['lunar', '22222', 1]]],
-  ['logic', [['soare', '02000', 87], ['culty', '10100', 1], ['logic', '22222', 1]]],
-];
-const ANSWERS = 2309;
+// Wordle Solver: a game of Wordle to play. The answer is drawn at random
+// before the first key. Around the board orbit all the possible answers, one
+// point each; a guess's colours put out the ones that no longer fit.
 const GREEN = '#3fbf74';
+
+// The colours `guess` gets against `answer`: 0 gray, 1 yellow, 2 green.
+// Greens are settled first; each yellow then uses up one unmatched letter.
+function colour(guess, answer) {
+  const out = [0, 0, 0, 0, 0], spare = {};
+  for (let k = 0; k < 5; k++) {
+    if (guess[k] === answer[k]) out[k] = 2;
+    else spare[answer[k]] = (spare[answer[k]] || 0) + 1;
+  }
+  for (let k = 0; k < 5; k++) if (!out[k] && spare[guess[k]]) { spare[guess[k]]--; out[k] = 1; }
+  return out;
+}
 
 const WORDLE_VERT = /* glsl */ `
   attribute float aSize;
@@ -374,13 +378,15 @@ const WORDLE_FRAG = /* glsl */ `
   }
 `;
 
-export function wordleWorld() {
+export function wordleWorld({ still = false } = {}) {
   const group = new THREE.Group();
   const board = new THREE.Group();
   board.rotation.order = 'YXZ';
   group.add(board);
 
-  const ROWS = 6, COLS = 5, S = 0.6, P = 10;
+  const ROWS = 6, COLS = 5, S = 0.6, N = ANSWERS.length;
+  const STAGGER = 0.11, FLIP = 0.34, SHOWN = 4 * STAGGER + FLIP; // a row's colours are all up after SHOWN
+  const allowed = new Set([...ANSWERS, ...OTHERS]);
   const blank = new THREE.Color('#17252d'), typed = new THREE.Color('#2e4652');
   const shades = [new THREE.Color('#3d4d56'), new THREE.Color('#e2a93a'), new THREE.Color(GREEN)];
   const tileGeo = new RoundedBoxGeometry(0.53, 0.53, 0.14, 3, 0.05);
@@ -407,21 +413,24 @@ export function wordleWorld() {
   const tiles = [];
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
     const pivot = new THREE.Group();
-    pivot.position.set((c - (COLS - 1) / 2) * S, ((ROWS - 1) / 2 - r) * S, 0);
+    const x = (c - (COLS - 1) / 2) * S;
+    pivot.position.set(x, ((ROWS - 1) / 2 - r) * S, 0);
     const box = new THREE.Mesh(tileGeo, std('#ffffff', { roughness: 0.45, emissive: '#000000' }));
     const face = new THREE.Mesh(faceGeo, new THREE.MeshBasicMaterial({ color: '#d5dde0', transparent: true, toneMapped: false, depthWrite: false }));
     face.position.z = 0.072;
+    face.visible = false;
     pivot.add(box, face);
     board.add(pivot);
-    tiles.push({ pivot, box, face });
+    tiles.push({ pivot, box, face, x, ch: '' });
   }
 
   // The answers: a ring of points around the board.
-  const pos = new Float32Array(ANSWERS * 3), tint = new Float32Array(ANSWERS * 4), size = new Float32Array(ANSWERS);
-  const ring = new Float32Array(ANSWERS * 4); // angle, radius, height, speed
-  const die = new Float32Array(ANSWERS);
+  const pos = new Float32Array(N * 3), tint = new Float32Array(N * 4), size = new Float32Array(N);
+  const ring = new Float32Array(N * 4); // angle, radius, height, speed
+  const out = new Float32Array(N);      // 0 still possible, 1 ruled out; eased every frame
+  const alive = new Uint8Array(N).fill(1);
   const seedRing = rng(2309);
-  for (let i = 0; i < ANSWERS; i++) {
+  for (let i = 0; i < N; i++) {
     const u = seedRing();
     ring[i * 4] = seedRing() * Math.PI * 2;
     ring[i * 4 + 1] = 2.75 + u * u * 1.5 + seedRing() * 0.25;
@@ -443,102 +452,144 @@ export function wordleWorld() {
   cloud.rotation.set(0.16, 0, -0.1);
   group.add(cloud);
 
-  let cycle = -1, rows = [], ends = [], solvedAt = 0;
-  const plan = (k) => {
-    const [, guesses] = GAMES[k % GAMES.length];
-    const gap = Math.min(1.75, 6.6 / guesses.length);
-    rows = guesses.map(([word, colours], r) => ({ word, colours: [...colours].map(Number), at: 0.5 + r * gap }));
-    // When each row's colours are all showing, and how many answers they leave.
-    ends = rows.map((row) => row.at + 0.5 + 4 * 0.11 + 0.3);
-    solvedAt = ends[ends.length - 1];
-    const order = Array.from({ length: ANSWERS }, (_, i) => i);
-    const r = rng(k * 17 + 3);
-    for (let i = ANSWERS - 1; i > 0; i--) { const j = (r() * (i + 1)) | 0; [order[i], order[j]] = [order[j], order[i]]; }
-    // order[0] is the answer. Every other point goes out with the first guess
-    // that leaves fewer answers than its place in the order.
-    die[order[0]] = Infinity;
-    for (let i = 1; i < ANSWERS; i++) {
-      const s = guesses.findIndex((g) => g[2] <= i);
-      die[order[i]] = ends[s] + r() * 0.25;
-    }
-    plan.answer = order[0];
-    tiles.forEach((tile, i) => {
-      const row = rows[(i / COLS) | 0];
-      tile.face.material.map = row ? letter(row.word[i % COLS]) : null;
-      tile.face.material.needsUpdate = true;
-    });
+  // The game. Times are in the world's clock (`now`), so the board animates
+  // from the moment of each key.
+  let now = 0, answer = 0, rows = [], cur = '', keyAt = [], shakeAt = -9, clearAt = -9, over = null, left = N, pending = 0;
+  const keys = {};
+  const world = { group, radius: 3.1, onChange: null };
+  const state = () => ({ keys: { ...keys }, over, answer: over ? ANSWERS[answer] : null, guesses: rows.length });
+  const tell = () => world.onChange?.(state());
+  const deal = () => {
+    answer = (Math.random() * N) | 0;
+    rows = []; cur = ''; keyAt = []; over = null; left = N;
+    alive.fill(1);
+    for (const k in keys) delete keys[k];
+    clearAt = now;
+    clearTimeout(pending);
+    tell();
+  };
+  const busy = () => rows.length > 0 && !still && now < rows[rows.length - 1].at + SHOWN;
+
+  world.game = {
+    type(ch) {
+      if (over || busy() || cur.length >= COLS) return;
+      keyAt[cur.length] = now;
+      cur += ch;
+    },
+    back() {
+      if (!over && !busy()) cur = cur.slice(0, -1);
+    },
+    enter() {
+      if (busy()) return;
+      if (over) return deal();
+      if (cur.length < COLS || !allowed.has(cur)) { shakeAt = now; return; }
+      const colours = colour(cur, ANSWERS[answer]);
+      rows.push({ word: cur, colours, at: now });
+      left = 0;
+      for (let i = 0; i < N; i++) {
+        if (alive[i] && colour(cur, ANSWERS[i]).join('') !== colours.join('')) alive[i] = 0;
+        left += alive[i];
+      }
+      const word = cur, won = cur === ANSWERS[answer];
+      cur = ''; keyAt = [];
+      // The keys take their colours, and the game its result, once the tiles have turned.
+      pending = setTimeout(() => {
+        for (let k = 0; k < COLS; k++) keys[word[k]] = Math.max(keys[word[k]] ?? 0, colours[k]);
+        if (won) over = 'won';
+        else if (rows.length === ROWS) over = 'lost';
+        tell();
+      }, still ? 0 : SHOWN * 1000);
+    },
+    // True while Enter belongs to the game: a guess is under way, or it is over.
+    get wants() { return !!over || cur.length > 0; },
   };
 
   const ice = new THREE.Color(ICE), green = new THREE.Color(GREEN).multiplyScalar(1.6), col = new THREE.Color();
   const pale = new THREE.Color('#d5dde0'), ink = new THREE.Color('#071014');
   const v = new THREE.Vector3();
-  let yaw = 0;
+  let yaw = 0, won = 0;
 
-  return {
-    group, radius: 3.1,
-    // The board turns to whoever is looking.
-    face(camera) {
-      if (!camera || !group.parent) return;
-      group.parent.worldToLocal(camera.getWorldPosition(v)).sub(group.position);
-      yaw = Math.atan2(v.x, v.z);
-      board.rotation.set(-Math.atan2(v.y, Math.hypot(v.x, v.z)) * 0.55, yaw, 0);
-    },
-    update(t, dt, camera) {
-      const k = Math.floor(t / P), tau = t - k * P;
-      if (k !== cycle) { cycle = k; plan(k); }
-      this.face(camera);
-      board.rotation.y = yaw + Math.sin(t * 0.35) * 0.16;
-      const out = easeInOut(clamp((tau - (P - 0.7)) / 0.55)); // the board clears for the next game
-
-      tiles.forEach((tile, i) => {
-        const r = (i / COLS) | 0, c = i % COLS, row = rows[r];
-        let flip = 0, shade = blank, lit = 0, shown = 0, pop = 1;
-        if (row && out < 0.5) {
-          const typedAt = row.at + c * 0.07, flipAt = row.at + 0.5 + c * 0.11;
-          shown = tau >= typedAt ? 1 : 0;
-          pop = 1 + 0.12 * Math.sin(Math.PI * clamp((tau - typedAt) / 0.16));
-          const p = clamp((tau - flipAt) / 0.34);
-          flip = Math.sin(Math.PI * p) * (Math.PI / 2);
-          shade = p >= 0.5 ? shades[row.colours[c]] : shown ? typed : blank;
-          lit = p >= 0.5 ? (row.colours[c] ? 0.22 : 0.03) : 0;
-          // The solved row takes a bow.
-          if (r === rows.length - 1) tile.pivot.position.z = 0.22 * Math.sin(Math.PI * clamp((tau - solvedAt - c * 0.08) / 0.5));
-          else tile.pivot.position.z = 0;
-        } else tile.pivot.position.z = 0;
-        const turn = Math.sin(Math.PI * clamp(out)) * (Math.PI / 2);
-        tile.pivot.rotation.x = flip + turn;
-        tile.pivot.scale.setScalar(pop);
-        tile.box.material.color.copy(shade);
-        tile.box.material.emissive.copy(shade).multiplyScalar(lit);
-        // Pale letters on the dark tiles, dark ones on yellow and green.
-        tile.face.material.color.copy(lit > 0.1 ? ink : pale);
-        tile.face.visible = shown === 1;
-      });
-
-      // How many answers are still standing decides how bright each one burns.
-      let stage = 0;
-      while (stage < ends.length && tau >= ends[stage]) stage++;
-      const few = stage === 0 ? 0 : clamp(1 - Math.log2(GAMES[cycle % GAMES.length][1][stage - 1][2]) / 8);
-      const back = 1 - out;
-      for (let i = 0; i < ANSWERS; i++) {
-        const gone = easeOut((tau - die[i]) / 0.9) * back;
-        const a = ring[i * 4] + t * ring[i * 4 + 3];
-        const rad = ring[i * 4 + 1] + gone * 0.5;
-        pos[i * 3] = Math.cos(a) * rad;
-        pos[i * 3 + 1] = ring[i * 4 + 2] * (1 + gone * 0.8);
-        pos[i * 3 + 2] = Math.sin(a) * rad;
-        const won = i === plan.answer ? easeOut((tau - solvedAt) / 0.4) * back : 0;
-        col.copy(ice).lerp(green, won);
-        tint[i * 4] = col.r; tint[i * 4 + 1] = col.g; tint[i * 4 + 2] = col.b;
-        // An answer that no longer fits stays as dust, so the ring keeps its shape.
-        tint[i * 4 + 3] = lerp(0.55 + 0.45 * few * back, 0.13, gone);
-        size[i] = lerp(0.11 + 0.3 * few * back, 0.07, gone) + won * 0.35;
-      }
-      geo.attributes.position.needsUpdate = true;
-      geo.attributes.aTint.needsUpdate = true;
-      geo.attributes.aSize.needsUpdate = true;
-    },
+  // The board turns to whoever is looking.
+  world.face = (camera) => {
+    if (!camera || !group.parent) return;
+    group.parent.worldToLocal(camera.getWorldPosition(v)).sub(group.position);
+    yaw = Math.atan2(v.x, v.z);
+    board.rotation.set(-Math.atan2(v.y, Math.hypot(v.x, v.z)) * 0.55, yaw, 0);
   };
+
+  world.update = (t, dt, camera) => {
+    now = t;
+    world.face(camera);
+    if (!still) board.rotation.y = yaw + Math.sin(t * 0.35) * 0.1;
+    const last = rows.length - 1;
+    const solvedAt = last >= 0 && rows[last].word === ANSWERS[answer] ? rows[last].at + SHOWN : Infinity;
+    const deal01 = still ? 1 : clamp((t - clearAt) / 0.3);
+    const shake = still ? 0 : Math.sin((t - shakeAt) * 42) * 0.07 * (1 - clamp((t - shakeAt) / 0.4));
+
+    tiles.forEach((tile, i) => {
+      const r = (i / COLS) | 0, c = i % COLS, row = rows[r];
+      let flip = Math.cos((deal01 * Math.PI) / 2) * (Math.PI / 2), shade = blank, lit = 0, ch = '', pop = 1, x = tile.x, z = 0;
+      if (row) {
+        const p = still ? 1 : clamp((t - row.at - c * STAGGER) / FLIP);
+        ch = row.word[c];
+        flip = Math.sin(Math.PI * p) * (Math.PI / 2);
+        shade = p >= 0.5 ? shades[row.colours[c]] : typed;
+        lit = p >= 0.5 ? (row.colours[c] ? 0.22 : 0.03) : 0;
+        // The solved row takes a bow.
+        if (r === last && !still) z = 0.22 * Math.sin(Math.PI * clamp((t - solvedAt - c * 0.08) / 0.5));
+      } else if (r === rows.length) {
+        x += shake;
+        if (c < cur.length) {
+          ch = cur[c];
+          shade = typed;
+          if (!still) pop = 1 + 0.12 * Math.sin(Math.PI * clamp((t - keyAt[c]) / 0.16));
+        }
+      }
+      tile.pivot.position.x = x;
+      tile.pivot.position.z = z;
+      tile.pivot.rotation.x = flip;
+      tile.pivot.scale.setScalar(pop);
+      tile.box.material.color.copy(shade);
+      tile.box.material.emissive.copy(shade).multiplyScalar(lit);
+      // Pale letters on the dark tiles, dark ones on yellow and green.
+      tile.face.material.color.copy(lit > 0.1 ? ink : pale);
+      if (ch !== tile.ch) {
+        tile.ch = ch;
+        tile.face.visible = !!ch;
+        if (ch) { tile.face.material.map = letter(ch); tile.face.material.needsUpdate = true; }
+      }
+    });
+
+    // The fewer answers still standing, the brighter each one burns. The
+    // ring changes only once the row's colours are up.
+    const settled = !busy();
+    const few = left >= N ? 0 : clamp(1 - Math.log2(Math.max(left, 1)) / 8);
+    const ease = still ? 1 : Math.min(1, dt * 3.5);
+    won += ((t >= solvedAt ? 1 : 0) - won) * (still ? 1 : Math.min(1, dt * 5));
+    for (let i = 0; i < N; i++) {
+      if (settled || alive[i]) out[i] += ((alive[i] ? 0 : 1) - out[i]) * ease;
+      const gone = out[i];
+      const a = ring[i * 4] + (still ? 0 : t * ring[i * 4 + 3]);
+      const rad = ring[i * 4 + 1] + gone * 0.5;
+      pos[i * 3] = Math.cos(a) * rad;
+      pos[i * 3 + 1] = ring[i * 4 + 2] * (1 + gone * 0.8);
+      pos[i * 3 + 2] = Math.sin(a) * rad;
+      const mine = i === answer ? won : 0;
+      col.copy(ice).lerp(green, mine);
+      tint[i * 4] = col.r; tint[i * 4 + 1] = col.g; tint[i * 4 + 2] = col.b;
+      // An answer that no longer fits stays as dust, so the ring keeps its shape.
+      const lift = settled ? few : 0;
+      tint[i * 4 + 3] = lerp(0.55 + 0.45 * lift, 0.13, gone);
+      size[i] = lerp(0.11 + 0.3 * lift, 0.07, gone) + mine * 0.35;
+    }
+    geo.attributes.position.needsUpdate = true;
+    geo.attributes.aTint.needsUpdate = true;
+    geo.attributes.aSize.needsUpdate = true;
+  };
+
+  world.dispose = () => clearTimeout(pending);
+  deal();
+  return world;
 }
 
 // Load Balancer: requests fall into the balancer and fan out to six servers.

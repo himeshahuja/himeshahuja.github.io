@@ -30,7 +30,7 @@ const projects = [
   },
   {
     title: 'Wordle Solver',
-    text: 'Each guess is the one whose colours should reveal the most. Every answer solved within six.',
+    text: 'Play a round here. The solver picks each guess for what its colours should reveal.',
     verb: 'Watch it solve',
     play: 'https://himeshahuja.github.io/wordle-solver/',
   },
@@ -60,6 +60,9 @@ const projects = [
     play: 'https://himeshahuja.github.io/net-worth/?sample',
   },
 ];
+
+const WORDLE = projects.findIndex((p) => p.title === 'Wordle Solver');
+const KEY_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 
 // Oldest first: the experience section reads as a route that arrives at now.
 const jobs = [
@@ -114,7 +117,9 @@ export default function Portfolio() {
   const end = useRef(null);
   const bar = useRef(null);
   const space = useRef(null);
+  const wordle = useRef(null);
   const [active, setActive] = useState(0);
+  const [game, setGame] = useState({ keys: {}, over: null, answer: null });
   const [live, setLive] = useState(false);
   const [touch] = useState(() => window.matchMedia('(hover: none)').matches);
 
@@ -128,6 +133,9 @@ export default function Portfolio() {
         if (!alive) return;
         s = new Space(host.current, { reduced, onActive: setActive });
         space.current = s;
+        const w = s.worlds.find((x) => x.game);
+        w.onChange = setGame;
+        wordle.current = w.game;
         s.layout({ work: work.current, workStage: stage.current, workView: view.current, jobs: jobsRef.current, jobsView: jobsView.current, school: school.current, schoolView: schoolView.current, end: end.current });
         ro = new ResizeObserver(() => s.measure());
         ro.observe(document.body);
@@ -140,6 +148,7 @@ export default function Portfolio() {
       ro?.disconnect();
       s?.dispose();
       space.current = null;
+      wordle.current = null;
     };
   }, []);
 
@@ -165,6 +174,27 @@ export default function Portfolio() {
     check();
     return () => removeEventListener('scroll', onScroll);
   }, []);
+
+  // While the Wordle world is on stage, the keyboard plays it.
+  useEffect(() => {
+    if (active !== WORDLE) return;
+    const onKey = (e) => {
+      const g = wordle.current;
+      if (!g || e.metaKey || e.ctrlKey || e.altKey) return;
+      const r = work.current.getBoundingClientRect();
+      if (r.top > innerHeight / 2 || r.bottom < innerHeight / 2) return;
+      if (e.key === 'Enter') {
+        // Enter still follows a focused link unless a guess is waiting on it.
+        if (!g.wants) return;
+        g.enter();
+      } else if (e.key === 'Backspace') g.back();
+      else if (/^[a-z]$/i.test(e.key)) g.type(e.key.toLowerCase());
+      else return;
+      e.preventDefault();
+    };
+    addEventListener('keydown', onKey);
+    return () => removeEventListener('keydown', onKey);
+  }, [active]);
 
   const goTo = useCallback((i) => {
     const top = work.current.offsetTop + i * stage.current.offsetHeight;
@@ -240,7 +270,24 @@ export default function Portfolio() {
                 ))}
               </ul>
             </div>
-            <div className="work-view" ref={view} />
+            <div className="work-view" ref={view}>
+              <div className={`keys${active === WORDLE && live ? ' is-on' : ''}`} inert={active !== WORDLE || !live} onPointerDown={(e) => e.preventDefault()}>
+                <p className="keys-said" aria-live="polite">{game.over === 'lost' ? game.answer : ''}</p>
+                {KEY_ROWS.map((row, r) => (
+                  <div key={row} className="keys-row">
+                    {r === 2 && <button type="button" className="key wide" onClick={() => wordle.current?.enter()}>{game.over ? 'New' : 'Enter'}</button>}
+                    {[...row].map((ch) => (
+                      <button key={ch} type="button" className="key" data-hit={game.keys[ch]} onClick={() => wordle.current?.type(ch)}>{ch}</button>
+                    ))}
+                    {r === 2 && (
+                      <button type="button" className="key wide" aria-label="Delete" onClick={() => wordle.current?.back()}>
+                        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9 5h11v14H9l-6-7zM12 9.5l5 5M17 9.5l-5 5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" /></svg>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 

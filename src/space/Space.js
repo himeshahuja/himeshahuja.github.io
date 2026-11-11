@@ -179,6 +179,8 @@ export default class Space {
       jobsTop: box(a.jobs).top + sy,
       schoolTop: box(a.school).top + sy,
       workRect: { x: view.left, y: view.top - stage.top, w: view.width, h: view.height },
+      // The Wordle keyboard stands along the foot of the view; its world sits above it.
+      keysH: a.workView.querySelector('.keys')?.offsetHeight || 0,
     };
   }
 
@@ -226,8 +228,11 @@ export default class Space {
     const dir = radial.multiplyScalar(Math.cos(az)).add(tangent.multiplyScalar(Math.sin(az)))
       .multiplyScalar(Math.cos(el)).addScaledVector(UP, Math.sin(el)).normalize();
     const r = this.m.workRect;
-    const d = this.fit(this.worlds[i].radius, Math.min(r.w, r.h) * 0.36);
-    return { pos: p.clone().addScaledVector(dir, d), look: p, cx: (r.x + r.w / 2) / this.W, cy: (r.y + r.h / 2) / this.H };
+    const h = r.h - (this.worlds[i].game ? this.m.keysH : 0);
+    // A world to play is framed on its board; the ring around it may run off the view.
+    const game = this.worlds[i].game;
+    const d = this.fit(game ? 2.3 : this.worlds[i].radius, Math.min(r.w, h) * (game ? 0.42 : 0.36));
+    return { pos: p.clone().addScaledVector(dir, d), look: p, cx: (r.x + r.w / 2) / this.W, cy: (r.y + h / 2) / this.H };
   }
 
   // Between two worlds the camera rides the A* route that joins them.
@@ -427,8 +432,8 @@ export default class Space {
       w.group.visible = grow > 0.001;
       w.group.scale.setScalar(Math.max(grow, 0.001));
       if (!w.group.visible) continue;
-      if (this.reduced) w.face?.(this.camera);
-      else w.update(t, dt, this.camera);
+      // A world with a game is always live; reduced motion only stills how it moves.
+      if (!this.reduced || w.game) w.update(t, dt, this.camera);
     }
     this.hole.group.getWorldPosition(wp);
     this.hole.group.visible = wp.distanceTo(cp) < 160;

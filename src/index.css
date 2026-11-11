@@ -452,6 +452,93 @@ main {
   min-height: 0;
 }
 
+/* The Wordle keyboard, along the foot of the view while its world is on stage. */
+.keys {
+  --key: clamp(30px, (100cqi - 32px - 54px) / 10, 44px);
+  position: absolute;
+  inset: auto 0 0;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 0 16px 24px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(16px);
+  transition: opacity 260ms var(--ease-out), transform 420ms var(--ease-out), visibility 0s linear 260ms;
+}
+
+.work-view {
+  container-type: inline-size;
+}
+
+.keys.is-on {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-duration: 600ms, 800ms, 0s;
+  transition-delay: 120ms, 120ms, 0s;
+}
+
+.keys-said {
+  min-height: 1.2em;
+  font-family: var(--display);
+  font-size: var(--step-lead);
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.keys-row {
+  display: flex;
+  gap: 6px;
+}
+
+.key {
+  display: grid;
+  place-items: center;
+  width: var(--key);
+  height: 50px;
+  border-radius: 6px;
+  background: #22343d;
+  color: var(--ink);
+  font-size: var(--step-body);
+  font-weight: 600;
+  text-transform: uppercase;
+  transition: background-color var(--t-ui) var(--ease-out), color var(--t-ui) var(--ease-out), transform var(--t-press) var(--ease-out);
+}
+
+.key.wide {
+  width: auto;
+  min-width: calc(var(--key) * 1.5 + 3px);
+  padding: 0 8px;
+  font-size: var(--step-small);
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.key:hover {
+  background: #2e4652;
+}
+
+.key:active {
+  transform: scale(0.94);
+}
+
+.key[data-hit='0'] {
+  background: #0d161b;
+  color: var(--muted);
+}
+
+.key[data-hit='1'] {
+  background: #e2a93a;
+  color: var(--accent-ink);
+}
+
+.key[data-hit='2'] {
+  background: #3fbf74;
+  color: var(--accent-ink);
+}
+
 /* The pointer is a star. The native cursor hides only where the star can follow it. */
 html.star-cursor,
 html.star-cursor * {
@@ -943,6 +1030,31 @@ html.js [data-reveal].is-in {
 
   .work-view {
     grid-area: view;
+  }
+
+  .keys {
+    gap: 5px;
+    padding: 0 8px 10px;
+    --key: calc((100cqi - 16px - 45px) / 10);
+  }
+
+  .keys-row {
+    gap: 5px;
+    max-width: 100%;
+  }
+
+  .key.wide {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .keys-row:last-child {
+    width: 100%;
+  }
+
+  .key {
+    height: 42px;
   }
 
   .demo {
