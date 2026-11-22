@@ -693,6 +693,138 @@ export function balancerWorld() {
   };
 }
 
+// Neuro Drift: a floating circuit and a grid of cars, one generation every few
+// seconds. Early generations weave and crash in the first corners; each one
+// gets further and faster, and one bloodline's paint takes over the grid.
+export function driftWorld() {
+  const group = new THREE.Group();
+  const SAMPLES = 240, HALF = 0.27, CARS = 24, GENS = 6, P = 6;
+  const shape = (a) => 1.75 * (1 + 0.16 * Math.sin(2 * a + 0.6) + 0.09 * Math.sin(3 * a + 2.1));
+  const centre = [], tangent = [], normal = [];
+  for (let i = 0; i < SAMPLES; i++) {
+    const a = (i / SAMPLES) * Math.PI * 2, r = shape(a);
+    centre.push(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r));
+  }
+  for (let i = 0; i < SAMPLES; i++) {
+    const d = centre[(i + 1) % SAMPLES].clone().sub(centre[(i + SAMPLES - 1) % SAMPLES]).normalize();
+    tangent.push(d);
+    normal.push(new THREE.Vector3(-d.z, 0, d.x));
+  }
+  // A point u laps along the centre line (any real number), `side` across it.
+  const at = (u, side, out) => {
+    const f = (((u % 1) + 1) % 1) * SAMPLES, i = Math.floor(f), j = (i + 1) % SAMPLES, k = f - i;
+    out.copy(centre[i]).lerp(centre[j], k).addScaledVector(normal[i], side);
+    return Math.atan2(lerp(tangent[i].z, tangent[j].z, k), lerp(tangent[i].x, tangent[j].x, k));
+  };
+
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.6, 0.1, 64), std('#04070a', { roughness: 1, metalness: 0 }));
+  base.position.y = -0.09;
+  group.add(base);
+
+  // Asphalt and the two kerbs as triangle strips, the kerbs striped red and white.
+  const strip = (inner, outer, y, colours) => {
+    const pos = [], col = [], idx = [], c = new THREE.Color(), v = new THREE.Vector3();
+    for (let i = 0; i <= SAMPLES; i++) {
+      const s = i % SAMPLES;
+      v.copy(centre[s]).addScaledVector(normal[s], inner); pos.push(v.x, y, v.z);
+      v.copy(centre[s]).addScaledVector(normal[s], outer); pos.push(v.x, y, v.z);
+      c.set(colours(i)); col.push(c.r, c.g, c.b, c.r, c.g, c.b);
+      if (i) idx.push(2 * i - 2, 2 * i - 1, 2 * i, 2 * i - 1, 2 * i + 1, 2 * i);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, side: THREE.DoubleSide }));
+  };
+  group.add(strip(-HALF, HALF, 0, () => '#101317'));
+  const kerb = (i) => (Math.floor(i / 3) % 2 ? '#7a1f16' : '#4a4743');
+  group.add(strip(-HALF - 0.05, -HALF, 0.004, kerb));
+  group.add(strip(HALF, HALF + 0.05, 0.004, kerb));
+  const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.06, HALF * 2).rotateX(-Math.PI / 2), glow('#8a857c'));
+  flag.position.copy(centre[0]).setY(0.006);
+  flag.rotation.y = -Math.atan2(tangent[0].z, tangent[0].x);
+  group.add(flag);
+
+  const cars = new THREE.InstancedMesh(new RoundedBoxGeometry(0.24, 0.09, 0.13, 2, 0.03), std('#ffffff', { roughness: 0.8, metalness: 0 }), CARS);
+  group.add(cars);
+  const sparks = new THREE.InstancedMesh(new THREE.SphereGeometry(0.025, 6, 4), glow('#ffffff'), CARS * 5);
+  group.add(sparks);
+  const rays = new LineSegments2(new LineSegmentsGeometry().setPositions(new Array(5 * 6).fill(0)), new LineMaterial({ color: ICE, linewidth: 1.2, transparent: true, opacity: 0.55 }));
+  rays.frustumCulled = false;
+  group.add(rays);
+
+  // Each generation: how far every car gets, its pace, how much it weaves, its paint.
+  const WIN_HUE = 0.11;
+  const BEST = [0.22, 0.45, 0.7, 1.15, 1.9, 2.4];
+  let gen = null, cycle = -1;
+  const plan = (k) => {
+    const g = k % GENS, r = rng(k * 29 + 7), learnt = g / (GENS - 1);
+    gen = Array.from({ length: CARS }, (_, i) => {
+      const reach = i === 0 || r() < learnt * 0.55 ? BEST[g] : BEST[g] * (0.15 + 0.85 * Math.sqrt(r()));
+      const hue = learnt > r() ? WIN_HUE + (r() - 0.5) * 0.04 : r();
+      return {
+        reach, pace: (0.16 + 0.045 * g) * (0.7 + r() * 0.6),
+        weave: 0.11 * (1 - learnt) + 0.015, freq: 2 + r() * 3, phase: r() * 6.3, lane: (r() - 0.5) * 0.12,
+        colour: new THREE.Color().setHSL(((hue % 1) + 1) % 1, 0.85, 0.3), dir: r() < 0.5 ? -1 : 1,
+      };
+    });
+  };
+
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s3 = new THREE.Vector3(1, 1, 1), p3 = new THREE.Vector3(), e3 = new THREE.Vector3();
+  const wreck = new THREE.Color('#1c2024'), up = new THREE.Vector3(0, 1, 0);
+
+  return {
+    group, radius: 2.3,
+    update(t) {
+      group.rotation.y = t * 0.05;
+      const k = Math.floor(t / P), tau = t - k * P;
+      if (k !== cycle) { cycle = k; plan(k); }
+      let lead = null, leadU = -1, sp = 0;
+      gen.forEach((c, i) => {
+        const run = c.pace * tau, crashed = run >= c.reach;
+        const u = Math.min(run, c.reach);
+        // A crash slides the car off its line and toward the kerb.
+        const side = clamp(c.lane + c.weave * Math.sin(u * 40 / c.freq + c.phase) + (crashed ? c.dir * 0.1 : 0), -HALF + 0.04, HALF - 0.04);
+        const yaw = at(u, side, p3) + (crashed ? c.dir * 0.9 : c.weave * Math.cos(u * 40 / c.freq + c.phase) * 2);
+        p3.y = 0.055;
+        q.setFromAxisAngle(up, -yaw);
+        cars.setMatrixAt(i, m4.compose(p3, q, s3.setScalar(1)));
+        cars.setColorAt(i, crashed ? wreck : c.colour);
+        if (!crashed && u > leadU) { leadU = u; lead = p3.clone(); }
+        const age = (run - c.reach) / c.pace;
+        if (crashed && age < 0.5) {
+          for (let s = 0; s < 5; s++) {
+            const a = s * 1.256 + i;
+            e3.set(Math.cos(a), 0.6 + (s % 2) * 0.5, Math.sin(a)).multiplyScalar(easeOut(age / 0.5) * 0.28).add(p3);
+            sparks.setMatrixAt(sp, m4.compose(e3, q, s3.setScalar(1 - age / 0.5)));
+            sparks.setColorAt(sp++, c.colour);
+          }
+        }
+      });
+      cars.instanceMatrix.needsUpdate = true;
+      cars.instanceColor.needsUpdate = true;
+      sparks.count = sp;
+      sparks.instanceMatrix.needsUpdate = true;
+      if (sparks.instanceColor) sparks.instanceColor.needsUpdate = true;
+
+      // The leader's sensors: rays out to the kerbs ahead of it.
+      rays.visible = !!lead;
+      if (lead) {
+        const seg = [];
+        for (const [du, s] of [[0.012, -HALF], [0.03, -HALF], [0.07, 0], [0.03, HALF], [0.012, HALF]]) {
+          at(leadU + du, s, e3);
+          seg.push(lead.x, 0.07, lead.z, e3.x, 0.02, e3.z);
+        }
+        const buf = rays.geometry.attributes.instanceStart.data;
+        buf.array.set(seg);
+        buf.needsUpdate = true;
+      }
+    },
+  };
+}
+
 // Maze Solver: walls sink as depth-first search carves the maze, then BFS
 // floods it and the shortest path lights up.
 export function mazeWorld() {
@@ -1050,4 +1182,4 @@ export function blackHoleWorld() {
   };
 }
 
-export const WORLDS = [mapWorld, raftWorld, mineWorld, wordleWorld, balancerWorld, mazeWorld, cubeWorld, lockWorld];
+export const WORLDS = [mapWorld, driftWorld, raftWorld, mineWorld, wordleWorld, balancerWorld, mazeWorld, cubeWorld, lockWorld];

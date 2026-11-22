@@ -17,6 +17,12 @@ const projects = [
     play: 'https://himeshahuja.github.io/map-pathfinder/',
   },
   {
+    title: 'Neuro Drift',
+    text: 'Cars with tiny neural networks that learn to race by evolution.',
+    verb: 'Race the champion',
+    play: 'https://himeshahuja.github.io/neuro-drift/',
+  },
+  {
     title: 'Raft',
     text: 'A consensus cluster you can crash, partition and watch recover.',
     verb: 'Crash a server',

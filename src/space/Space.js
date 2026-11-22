@@ -16,7 +16,7 @@ const TAN = Math.tan((FOV / 2) * (Math.PI / 180));
 const UP = new THREE.Vector3(0, 1, 0);
 const AMBER = '#ffb23f';
 // Where the worlds sit, one per project: along one arm, spiralling in toward the core.
-const RADII = [50, 44, 38.5, 33.5, 28.5, 24, 19.5, 15.5];
+const RADII = [50, 44.5, 39.5, 35, 30.5, 26, 22, 18, 14];
 const CLEAR = 4.8;
 // The end of the route: a black hole out beyond the galaxy's rim.
 const END = new THREE.Vector3(0, 95, 280);
