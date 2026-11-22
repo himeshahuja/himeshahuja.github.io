@@ -694,11 +694,12 @@ export function balancerWorld() {
 }
 
 // Neuro Drift: a floating circuit and a grid of cars, one generation every few
-// seconds. Early generations weave and crash in the first corners; each one
-// gets further and faster, and one bloodline's paint takes over the grid.
+// race. Early generations weave and crash in the first corners; each one gets
+// further and faster, and one bloodline's paint takes over the grid. Finishers
+// park on the line, and the next race starts once every car is done.
 export function driftWorld() {
   const group = new THREE.Group();
-  const SAMPLES = 240, HALF = 0.27, CARS = 24, GENS = 6, P = 6;
+  const SAMPLES = 240, HALF = 0.27, CARS = 24, GENS = 6, LAPS = 2, HOLD = 1.2;
   const shape = (a) => 1.75 * (1 + 0.16 * Math.sin(2 * a + 0.6) + 0.09 * Math.sin(3 * a + 2.1));
   const centre = [], tangent = [], normal = [];
   for (let i = 0; i < SAMPLES; i++) {
@@ -757,8 +758,8 @@ export function driftWorld() {
 
   // Each generation: how far every car gets, its pace, how much it weaves, its paint.
   const WIN_HUE = 0.11;
-  const BEST = [0.22, 0.45, 0.7, 1.15, 1.9, 2.4];
-  let gen = null, cycle = -1;
+  const BEST = [0.22, 0.45, 0.7, 1.15, LAPS, LAPS];
+  let gen = null, cycle = 0, start = 0, length = 0;
   const plan = (k) => {
     const g = k % GENS, r = rng(k * 29 + 7), learnt = g / (GENS - 1);
     gen = Array.from({ length: CARS }, (_, i) => {
@@ -770,6 +771,9 @@ export function driftWorld() {
         colour: new THREE.Color().setHSL(((hue % 1) + 1) % 1, 0.85, 0.3), dir: r() < 0.5 ? -1 : 1,
       };
     });
+    // Finishers park in rows of three just past the flag, in the order they arrive.
+    gen.filter((c) => c.reach >= LAPS).sort((a, b) => a.pace - b.pace).reverse().forEach((c, n) => { c.slot = n; });
+    length = Math.max(...gen.map((c) => c.reach / c.pace)) + HOLD;
   };
 
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s3 = new THREE.Vector3(1, 1, 1), p3 = new THREE.Vector3(), e3 = new THREE.Vector3();
@@ -779,20 +783,21 @@ export function driftWorld() {
     group, radius: 2.3,
     update(t) {
       group.rotation.y = t * 0.05;
-      const k = Math.floor(t / P), tau = t - k * P;
-      if (k !== cycle) { cycle = k; plan(k); }
+      if (!gen || t < start) { cycle = 0; start = 0; plan(0); }
+      while (t - start >= length) { start += length; plan(++cycle); }
+      const tau = t - start;
       let lead = null, leadU = -1, sp = 0;
       gen.forEach((c, i) => {
-        const run = c.pace * tau, crashed = run >= c.reach;
-        const u = Math.min(run, c.reach);
+        const run = c.pace * tau, done = run >= c.reach, finished = done && c.reach >= LAPS, crashed = done && !finished;
+        const u = finished ? LAPS + 0.014 + Math.floor(c.slot / 3) * 0.022 : Math.min(run, c.reach);
         // A crash slides the car off its line and toward the kerb.
-        const side = clamp(c.lane + c.weave * Math.sin(u * 40 / c.freq + c.phase) + (crashed ? c.dir * 0.1 : 0), -HALF + 0.04, HALF - 0.04);
-        const yaw = at(u, side, p3) + (crashed ? c.dir * 0.9 : c.weave * Math.cos(u * 40 / c.freq + c.phase) * 2);
+        const side = finished ? ((c.slot % 3) - 1) * 0.16 : clamp(c.lane + c.weave * Math.sin(u * 40 / c.freq + c.phase) + (crashed ? c.dir * 0.1 : 0), -HALF + 0.04, HALF - 0.04);
+        const yaw = at(u, side, p3) + (finished ? 0 : crashed ? c.dir * 0.9 : c.weave * Math.cos(u * 40 / c.freq + c.phase) * 2);
         p3.y = 0.055;
         q.setFromAxisAngle(up, -yaw);
         cars.setMatrixAt(i, m4.compose(p3, q, s3.setScalar(1)));
         cars.setColorAt(i, crashed ? wreck : c.colour);
-        if (!crashed && u > leadU) { leadU = u; lead = p3.clone(); }
+        if (!done && u > leadU) { leadU = u; lead = p3.clone(); }
         const age = (run - c.reach) / c.pace;
         if (crashed && age < 0.5) {
           for (let s = 0; s < 5; s++) {
